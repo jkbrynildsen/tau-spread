@@ -1,0 +1,259 @@
+##################################
+### Atlas conversion functions ###
+##################################
+
+map.ABA.to.CNDR <- function(X.ABA,CNDR.names,ABA.to.CNDR.key){
+  #### NEED TO ENSURE ALL REGION NAMES ARE CORRECT ####
+  # Input:
+  # X.ABA: named vector of values associated with ABA regions, must have ABA names
+  # CNDR.names: character vector of CNDR names 
+  # ABA.to.CNDR.key: list whose element names are CNDR names and whose elements contain vectors of corresponding ABA names
+  
+  # Output:
+  # X.CNDR: named vector of values associated with CNDR regions, has CNDR names
+  
+  if(is.matrix(X.ABA)){ # convert X.ABA to named 1D vector if it's a named matrix
+    if(nrow(X.ABA) == 1){X.ABA <- setNames(X.ABA,colnames(X.ABA))}
+    if(ncol(X.ABA) == 1){X.ABA <- setNames(X.ABA,rownames(X.ABA))}
+  }
+  X.CNDR <- matrix(NA,nrow=length(CNDR.names)) # make new vector to hold data, default is NA
+  names(X.CNDR) <- CNDR.names
+  for(CNDR.region in CNDR.names){
+    ABA.region.match <- ABA.to.CNDR.key[[CNDR.region]] # get ABA region(s) corresponding to that CNDR region, if any
+    if(length(ABA.region.match) > 0){      # print out names in key that aren't in ABA connectome
+      display.missing.items(names(X.ABA),ABA.region.match,'Designation names not in ABA connectome names:')
+      X.CNDR[CNDR.region] <- mean(X.ABA[ABA.region.match])
+    } else if(length(ABA.region.match) ==0){# otherwise if no match, leave as NA    
+      print(paste('no match for CNDR region',CNDR.region))
+    }
+  }  
+  return(X.CNDR)
+}
+
+display.missing.items <- function(ref,items,msg=''){
+  # find and print the elements of items that are not in ref
+  # msg: extra text to display before printing missing items
+  if(length(items) > 0){
+    missingitems <- !(items %in% ref) 
+    if(sum(missingitems) > 0){ # if there are any missing items
+      print(msg)
+      print(items[missingitems])
+    }
+  } else {print('WARNING: items is empty')}
+}
+
+map.CNDR.to.ABA <- function(X.CNDR,ABA.names,CNDR.to.ABA.key){
+  # Input:
+  # X.CNDR: named vector of values associated with CNDR regions, must have CNDR names
+  # ABA.names: character vector of ABA names
+  # CNDR.to.ABA.key: list whose element names are CNDR names and whose elements contain vectors of corresponding ABA names
+  
+  # Output:
+  # X.ABA: named vector of values associated with ABA regions, has ABA names
+  if(is.matrix(X.CNDR)){ # convert X.CNDR to named 1D vector if it's a named matrix
+    if(nrow(X.CNDR) == 1){X.CNDR <- setNames(X.CNDR,colnames(X.CNDR))}
+    if(ncol(X.CNDR) == 1){X.CNDR <- setNames(X.CNDR,rownames(X.CNDR))}
+  }
+
+  X.ABA <- matrix(NA,nrow=length(ABA.names)) # make new vector to hold data, default is NA
+  names(X.ABA) <- ABA.names
+  for(ABA.region in ABA.names){
+    CNDR.region.match <- CNDR.to.ABA.key[[ABA.region]] # get ABA region(s) corresponding to that CNDR region, if any
+    if(length(CNDR.region.match) > 0){      # print out names in key that aren't in ABA connectome
+      display.missing.items(names(X.CNDR),CNDR.region.match,'Designation names not in CNDR path data names:')
+      X.ABA[ABA.region] <- mean(X.CNDR[CNDR.region.match])
+    } else if(length(CNDR.region.match) ==0){# otherwise if no match, leave as NA    
+      print(paste('no match for ABA region',ABA.region))
+    }
+  }  
+  return(X.ABA)
+}
+
+###############################
+### fitting diffusion model ###
+###############################
+
+get.Xo <- function(region.names,ROIs){
+  # generate initial "pathology seed" vector, which is all 0's except
+  # a 1 in all regions listed in character vector ROI
+  # ROIs should correspond to region.names
+  n.regions <- length(region.names)
+  Xo <- matrix(0, nrow=n.regions,ncol=1)
+  Xo[which(region.names %in% ROIs)] <- 1
+  rownames(Xo) <- region.names
+  return(Xo)
+}
+
+get.Lout <- function(W,S){
+  # W: NxN adjacency matrix, may be asymmetric (if so, connections are from row i to column j)  
+  # S: vector of weights to apply to each row of W (here, synuclein expression)
+  # The connections directionallity here is opposite the convention for matrix multiplication
+  # so we are capturing retrograde spread along connections
+  # compute out-degree laplacian for retrograde spread
+
+  n.regions <- nrow(W)
+  W <- W * !diag(n.regions) # get rid of diagonal
+  mag.orig <- sum(W) # original sum of weights
+  W <- diag(as.numeric(S)) %*% W
+  #W <- W * mag.orig/sum(W) # scale new W to have the same global strength... lets you fit with similar c range
+  #W <- W / (max(Re(eigen(W)$values))) # scale to max eigenvalue
+
+  # Where i is row element and j is column element
+  # Wij is a connection from region i to region j
+  # convention is the opposite, so without transposing W
+  # I am capturing "retrograde" connectivity
+
+  in.deg <- colSums(W)
+  out.deg <- rowSums(W)
+  L.out <- diag(x = out.deg) - W # outdegree laplacian
+  return(L.out)
+}
+
+predict.Lout <- function(L,Xo,c,t=1){
+  # Generate prediction for given time points using
+  # L: Laplacian of adjacency matrix
+  # Xo: initial conditions
+  # c: time constant
+  # t: time points
+
+  Xt <- do.call('cbind', lapply(t, function(t.i) expm(-L*c*t.i)%*%Xo))
+  rownames(Xt) <- rownames(Xo)
+  return(Xt)
+}
+
+c.fit <- function(log.path,L.out,Xo,c.rng){
+  # INPUTS:
+  # log.path: vector of log-10 transformed pathology scores. Time constant c is fit to predict these
+  # L.out: out-degree graph laplacian of anatomical connectivity matrix
+  # Xo: vector of initial pathology
+  # c.rng: range of time constants to test
+
+  # OUTPUTS:
+  # c: optimal time constant within c.rng for predicting log.path
+
+  # exclusion mask... don't count regions with 0 path
+  mask <- log.path != -Inf
+  # compute fit at each time point for range of time
+  Xt.sweep <- sapply(c.rng, function(c) # no time here, because in this project there's only 1 time pointo 
+    cor(log.path[mask],log(predict.Lout(L.out,Xo,c),base=10)[mask]))
+  c <- c.rng[which.max(Xt.sweep)] # select c giving max correlation
+  print(c)
+
+  return(c)
+}
+
+c.CNDRspace.fit <- function(log.path,tps,L.out,Xo,c.rng,ABA.to.CNDR.key){
+  # fits time constant by modeling CNDR data
+  # INPUTS:
+  # log.path: list of vectors of log-10 transformed pathology scores *in CNDR space*  
+  # for each time point specified in tps (below). Time constant c is fit to predict these
+  # tps: vector of numeric time points post injection
+  # L.out: out-degree graph laplacian of anatomical connectivity matrix
+  # Xo: vector of initial pathology
+  # c.rng: range of time constants to test
+
+  # this function runs diffusion model in ABA space, 
+  # but computes correlation with real data in CNDR annotation space to assess fit of time constant c
+  # CNDR names are names of log.path, ABA names are names of Xo
+  # OUTPUTS:
+  # c: optimal time constant within c.rng for predicting log.path
+  
+  # exclusion mask... don't count regions with 0 path
+  mask <- lapply(log.path,function(X) X != -Inf)
+  log.path <- lapply(1:length(log.path), function(t) log.path[[t]][mask[[t]]])
+  # compute fit at each time point for range of time
+  Xt.sweep <- rep(NA,length(c.rng))
+  for(c.i in 1:length(c.rng)){ # no time here, because in this project there's only 1 time pointo 
+  print(paste0('c ',c.i,' out of ',length(c.rng)))
+    c.val <- c.rng[c.i]
+    Xt.c <- lapply(tps,function(t) predict.Lout(L.out,Xo,c.val,t)) # predict path using linear diff model
+    Xt.c <- lapply(1:length(tps), function(t) quiet(map.ABA.to.CNDR(Xt.c[[t]],names(log.path[[t]]),ABA.to.CNDR.key))) # convert to CNDR space
+    mask <- lapply(Xt.c, function(Xt) !is.na(Xt))
+    #lapply(1:length(tps), function(t) print(paste('missing CNDR region',names(Xt.c[[t]])[!mask[[t]]],'from ABA connectome')))
+    Xt.sweep[c.i] <- mean(sapply(1:length(tps), function(t) cor(log.path[[t]][mask[[t]]],log(Xt.c[[t]][mask[[t]]],base=10))))
+  }
+  c.best <- c.rng[which.max(Xt.sweep)] # select c giving max correlation
+  print(c.best)
+
+  return(c.best)
+}
+
+c.ABAspace.fit <- function(log.path,L.out,Xo,c.rng,CNDR.to.ABA.key){
+  # fits time constant by modeling CNDR data
+  # INPUTS:
+  # log.path: vector of log-10 transformed pathology scores *in CNDR space*. Time constant c is fit to predict these
+  # L.out: out-degree graph laplacian of anatomical connectivity matrix
+  # Xo: vector of initial pathology
+  # c.rng: range of time constants to test
+
+  # this function runs diffusion model in ABA space, 
+  # abd computes correlation with real data in ABA annotation space to assess fit of time constant c
+
+  # OUTPUTS:
+  # c: optimal time constant within c.rng for predicting log.path
+  
+  log.path <- quiet(log(map.CNDR.to.ABA(10^(log.path),rownames(Xo),CNDR.to.ABA.key),base=10)) # undo log, convert to ABA space, retake log
+  # exclusion mask... don't count regions with 0 path
+  mask <- log.path != -Inf & !is.na(log.path)
+  # compute fit at each time point for range of time
+  Xt.sweep <- sapply(c.rng, function(c) # no time here, because in this project there's only 1 time pointo 
+    cor(log.path[mask],log(predict.Lout(L.out,Xo,c),base=10)[mask]))
+  c <- c.rng[which.max(Xt.sweep)] # select c giving max correlation
+  print(c)
+
+  return(c)
+}
+
+c.fit.r <- function(log.path,L.out,Xo,c.rng){
+  n.regions <- length(log.path)
+  # exclusion mask... don't count regions with 0 path
+  mask <- log.path != -Inf
+  # compute fit at each time point for range of time
+  Xt.sweep <- sapply(c.rng, function(c) # no time here, because in this project there's only 1 time pointo 
+    cor(log.path[mask],log(predict.Lout(L.out,Xo,c),base=10)[mask],use='pairwise.complete.obs'))
+  c <- c.rng[which.max(Xt.sweep)] # select c giving max correlation
+  r <- max(Xt.sweep)
+  print(c)
+  return(list(c=c,r=r,Xt.sweep=Xt.sweep)) # return time constant and correlation coefficient
+}
+
+c.fit.prior <- function(log.path,L.out,Xo,tp,c.rng){
+  # log.path: list of empirically measured path values for each node
+  # L.out: Laplacian matrix based on structural connectivity
+  # tp: vector of real values for time
+  # Xo: vector of initial state of pathology
+  # c.rng: values of time constant to test
+
+  n.regions <- length(log.path[[1]])
+  # exclusion mask... don't count regions with 0 path
+  mask <- lapply(log.path, function(x) x != -Inf)
+  # compute fit at each time point for range of time
+  Xt.sweep <- lapply(1:length(tp), function(t) # continuous time
+    sapply(c.rng, function(c)
+      cor(log.path[[t]][mask[[t]]],log(predict.Lout(L.out,Xo,c,t=t),base=10)[mask[[t]]])))
+  Xt.sweep <- Reduce('+',Xt.sweep) / length(tp) # mean fit for each tp
+  c <- c.rng[which.max(Xt.sweep)]
+  print(c)
+  return(c)
+}
+
+c.fit.prior.r <- function(log.path,L.out,Xo,tp,c.rng){
+  # log.path: list of empirically measured path values for each node
+  # L.out: Laplacian matrix based on structural connectivity
+  # tp: vector of real values for time
+  # Xo: vector of initial state of pathology
+  # c.rng: values of time constant to test
+
+  n.regions <- length(log.path[[1]])
+  # exclusion mask... don't count regions with 0 path
+  mask <- lapply(log.path, function(x) x != -Inf)
+  # compute fit at each time point for range of time
+  Xt.sweep <- lapply(1:length(tp), function(t) # continuous time
+    sapply(c.rng, function(c)
+      cor(log.path[[t]][mask[[t]]],log(predict.Lout(L.out,Xo,c,t=t),base=10)[mask[[t]]])))
+  r <- sapply(Xt.sweep, function(x) max(x)) # best fit for each time point
+  Xt.sweep <- Reduce('+',Xt.sweep) / length(tp) # mean fit for each tp
+  c <- c.rng[which.max(Xt.sweep)]
+  print(c)
+  return(list(c=c,r=r))
+}
