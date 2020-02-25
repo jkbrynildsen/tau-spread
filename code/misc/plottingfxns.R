@@ -13,7 +13,8 @@ p.xy <- function(x,y,xlab,ylab,ttl='',col='black',alpha=1){
   # x: x variable, vector
   # y: y variable, vector
   # xlab, ylab, ttl: character labels for axes
-  # col: point color and line color
+  # col: point color and line color, RGB hex code or R native color or RGB value
+  # alpha: opacity of points
   #
   # OUTPUTS:
   # scatter plot with r and p value for pearson correlation between x and y

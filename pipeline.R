@@ -38,18 +38,17 @@ source('code/aba/download_gene_expression.R') # specify variable gois in this fi
 ### Diffusion model ###
 #######################
 
+# retrograde model with additive Mapt expression
+for(grp in params$grps){
+  source('code/diffmodel/analyzespread_CNDRspace.R')
+  goi <- 'Mapt'
+  probe <- 'RP_071204_01_D02'
+  source('code/diffmodel/plotCNDRspacefit.R')
+}
+
+# bidirectional, independent, additive diffusion model: anterograde and retrograde additive and independent
 for(grp in params$grps){
   source('code/diffmodel/analyzebidirectionalspread_CNDRspace.R')
-  #goi <- 'Mapt'
-  #probe <- 'RP_071204_01_D02'
   source('code/diffmodel/plotCNDRspacebidirectionalfit.R')
 }
 
-####################################
-### Tau weighted diffusion model ###
-####################################
-
-for(grp in params$grps){
-  #source('code/diffmodel/analyzespread_weighted_CNDRspace.R')
-  #source('code/diffmodel/plotWeightedCNDRspacefit.R')
-}
