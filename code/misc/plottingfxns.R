@@ -8,14 +8,29 @@ plot.Xt <- function(Xt,t){
 
 }
 
-library(reshape2)
-imagesc <- function(m){
-	# plot matrix m as a heatmap for quick visualization
-	df <- melt(as.matrix(m))
-	p <- ggplot(df) + geom_tile(aes(x=Var1,y=Var2, fill=value)) + 
-		scale_y_discrete(limits=rev(unique(df$Var1))) + # flip y-axis so region 1 is at the top of the plot, 
-		theme(axis.text.x = element_text(angle=90))
-	return(p)
+p.xy <- function(x,y,xlab,ylab,ttl='',col='black',alpha=1){
+  # INPUTS:
+  # x: x variable, vector
+  # y: y variable, vector
+  # xlab, ylab, ttl: character labels for axes
+  # col: point color and line color
+  #
+  # OUTPUTS:
+  # scatter plot with r and p value for pearson correlation between x and y
+  # and linear fit
+
+  df <- data.frame(x=x,y=y)
+  df <- inf.nan.mask(df)
+  c.test <- cor.test(df$x,df$y)
+  r.text <- paste0('r = ',signif(c.test$estimate,2),'\np = ',signif(c.test$p.value,2)) # annotation
+
+  p <- ggplot(df) + geom_point(aes(x=x,y=y),color=col,stroke=0,alpha=alpha) + geom_smooth(aes(x=x,y=y),fill=col,color=col,method='lm') + 
+    xlab(xlab) + ylab(ylab) + ggtitle(ttl) + 
+    annotate("text",size = 2, x = Inf,y =-Inf, label = r.text,hjust=1,vjust=-0.2) +
+      theme_classic() + theme(text = element_text(size = 8)) + 
+      theme(plot.title = element_text(size=8,hjust=0.5,face = "bold")) +
+      theme(plot.margin=grid::unit(c(0,0,0,0), "mm")) + theme(legend.position = 'none')
+  return(p)
 }
 
 imagesc <- function(X,caxis_name='',cmap='plasma',caxis_labels=NULL,clim=c(min(X,na.rm=T),max(X,na.rm=T)),

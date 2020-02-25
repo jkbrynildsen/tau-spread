@@ -2,7 +2,7 @@
 ### Load data ###
 #################
 
-rm(list=setdiff(ls(),c('params','grp')))
+rm(list=setdiff(ls(),c('params','grp','goi','probe')))
 print(grp)
 basedir <- params$basedir
 setwd(basedir)
@@ -11,32 +11,67 @@ dir.create(savedir,recursive=T)
 
 source('code/misc/fitfxns.R')
 source('code/misc/miscfxns.R')
+source('code/misc/plottingfxns.R')
 load(paste(params$opdir,'processed/pathdata.RData',sep=''))  # load path data and ROI names
 load(paste(savedir,grp,'CNDRSpaceFit_data.RData',sep=''))
+tps <- params$tps
 
 # exclude regions with 0 pathology at each time point for purposes of computing fit
-mask <- df$path != -Inf & !is.na(df$pred)
-print(paste(sum(mask),'regions')) # number of regions left after exclusion
-df <- df[mask,] 
-# use linear model to predict path from connectivity and synuclein
-c.test <- cor.test(df$pred,df$path)
-print(paste(nrow(df),'regions'))
+lapply(1:length(tps), function(t) paste0(t,' MPI: ',sum(df[[t]]$path != -Inf & !is.na(df[[t]]$pred)),'/',nrow(df[[t]]),' regions left'))
+# plot for each time point, using p.xy function 
+p <- lapply(1:length(tps), function(t) 
+  p.xy(x=df[[t]]$pred,y=df[[t]]$path,ylab='Actual',xlab='Predicted',
+       ttl=paste0(grp,': ',tps[t],' MPI'),col='#007257',alpha=0.7))
+p <- plot_grid(plotlist=p,align='hv',nrow=1)
 
-p <- ggplot(df,aes(x=pred,y=path)) + geom_smooth(color = '#007257',method ='lm',size=1) + geom_point(color = '#007257',size = 1,alpha=0.6,stroke=0) +
-  annotate(geom='text',x=max(df$pred),y=min(df$path) + 0.1,label = paste('r =',signif(c.test$estimate,2)),size=2.5,hjust=1,vjust=0) +
-  #scale_x_continuous(limits=c(min(df$Xt),max(df$Xt))) +
-  theme_classic() + xlab('Predicted') + ylab('log(Path.)') + ggtitle(grp) +
-  theme(text = element_text(size=8),plot.title = element_text(hjust=0.5,size=8))
-
-ggsave(p,filename = paste(savedir,grp,'CNDRSpaceFit_predictedpathcontinuous.pdf',sep=''),units = 'in',height = 1.5,width = 1.5)
+ggsave(p,filename = paste(savedir,grp,'CNDRSpaceFit_basemodel.pdf',sep=''),
+       units = 'cm',height = 3.75,width = 3.75*length(tps))
 
 ###############################################
 ### Save predicted values and vulnerability ###
 ###############################################
 
-m <- lm(path~pred,data=df)
-vulnerability <- residuals(m)
-pred <- m$fitted.values
+m <- lapply(df, function(df.i) m <- lm(path~pred,data=inf.nan.mask(df.i)))
+vulnerability <- lapply(m,residuals)
 
-write.csv(data.frame(vuln=vulnerability),paste(savedir,grp,'vulnerability.csv',sep=''))
-write.csv(data.frame(pred=pred),paste(savedir,grp,'predictedpath.csv',sep=''))
+lapply(1:length(tps),function(t) write.csv(data.frame(vuln=vulnerability[[t]]),paste0(savedir,grp,'vulnerability',tps[t],'MPI.csv')))
+lapply(1:length(tps),function(t) write.csv(data.frame(pred=df[[t]][,'pred',drop=FALSE]),paste0(savedir,grp,'predictedpath',tps[t],'MPI.csv')))
+                                                                             
+#####################
+### Add gene data ###
+#####################
+
+# load gene data specified by goi, probe input variables
+gene.exp <- read.csv(paste0(basedir,'data/aba/expression/',goi,probe,'ExpressionCNDR.csv'),row.names = 1)
+df.gene <- lapply(df, function(x) merge(x,gene.exp,by=0)) # merge
+for(j in 1:length(df.gene)){rownames(df.gene[[j]]) <- df.gene[[j]]$Row.names} # remove row names
+for(j in 1:length(df.gene)){df.gene[[j]] <- df.gene[[j]][,-1]}
+
+##########################################################################
+### show how gene expression correlates with residuals of spread model ###
+##########################################################################
+
+vuln.gene <- lapply(vulnerability, function(v) merge(as.data.frame(v),gene.exp,by=0))
+p <- lapply(1:length(tps), function(t) 
+  p.xy(x=vuln.gene[[t]][,paste0(goi,'_',probe)],y=vuln.gene[[t]]$v,ylab='Vulnerability',xlab=paste0(goi,' Expression'),
+       ttl=paste0(grp,': ',tps[t],' MPI'),col='#007257',alpha=0.7))
+p <- plot_grid(plotlist=p,align='hv',nrow=1)
+ggsave(p,filename = paste(savedir,grp,'CNDRSpaceVulnerability_basemodel_vs',goi,probe,'.pdf',sep=''),
+       units = 'cm',height = 3.75,width = 3.75*length(tps))
+
+##############################
+### Include genes in model ###
+##############################
+
+m <- lapply(df.gene, function(df.i) m <- lm(path~.,data=inf.nan.mask(df.i)))
+vulnerability <- lapply(m,residuals)
+pred <- lapply(m, function(m.i) m.i$fitted.values)
+
+p <- lapply(1:length(tps), function(t) 
+  p.xy(x=m[[t]]$fitted.values,y=m[[t]]$model$path,ylab='Actual',xlab='Predicted',
+       ttl=paste0(grp,': ',tps[t],' MPI'),col='#007257',alpha=0.7))
+p <- plot_grid(plotlist=p,align='hv',nrow=1)
+ggsave(p,filename = paste(savedir,grp,'CNDRSpaceFit_basemodel+',goi,probe,'.pdf',sep=''),
+       units = 'cm',height = 3.75,width = 3.75*length(tps))
+lapply(1:length(tps),function(t) write.csv(data.frame(vuln=vulnerability[[t]]),paste0(savedir,grp,'vulnerability',tps[t],'MPI',goi,probe,'.csv')))
+lapply(1:length(tps),function(t) write.csv(data.frame(pred=pred[[t]]),paste0(savedir,grp,'predictedpath',tps[t],'MPI',goi,probe,'.csv')))

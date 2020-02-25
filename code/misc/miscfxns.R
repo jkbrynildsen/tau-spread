@@ -27,6 +27,23 @@ fda <- function(x1,x2,nperms = 1000){
 
 }
 
+inf.nan.mask <- function(x){
+	# INPUTS:
+	# x: matrix, df, or vector
+	#
+	# OUTPUTS:
+	# x.masked: x with all rows (if matrix or df) or elements (if vector) containing Infs or NaNs removed
+	
+	if(is.vector(x)){
+		mask <- x %in% c(-Inf,Inf,NaN)# find infs or nans
+		x.masked <- x[!mask]
+	} else if(is.matrix(x) | is.data.frame(x)){
+		mask <- do.call('cbind',lapply(1:ncol(x),function(j) x[,j] %in% c(-Inf,Inf,NaN))) # find infs or nans
+		x.masked <- x[rowSums(mask)==0,]
+	}
+	return(x.masked)
+	
+}
 source.save <- function(script,output){
 	# wrapper for source function that saves output and input of script
 	file.create(output)

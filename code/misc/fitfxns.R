@@ -5,24 +5,22 @@
 map.ABA.to.CNDR <- function(X.ABA,CNDR.names,ABA.to.CNDR.key){
   #### NEED TO ENSURE ALL REGION NAMES ARE CORRECT ####
   # Input:
-  # X.ABA: named vector of values associated with ABA regions, must have ABA names
+  # X.ABA: named matrix of values associated with ABA regions, must have ABA names as rows, and any number of columns
   # CNDR.names: character vector of CNDR names 
   # ABA.to.CNDR.key: list whose element names are CNDR names and whose elements contain vectors of corresponding ABA names
   
   # Output:
-  # X.CNDR: named vector of values associated with CNDR regions, has CNDR names
+  # X.CNDR: named matrix of values associated with CNDR regions, has CNDR names for rows
   
-  if(is.matrix(X.ABA)){ # convert X.ABA to named 1D vector if it's a named matrix
-    if(nrow(X.ABA) == 1){X.ABA <- setNames(X.ABA,colnames(X.ABA))}
-    if(ncol(X.ABA) == 1){X.ABA <- setNames(X.ABA,rownames(X.ABA))}
-  }
-  X.CNDR <- matrix(NA,nrow=length(CNDR.names)) # make new vector to hold data, default is NA
-  names(X.CNDR) <- CNDR.names
+  X.ABA <- as.matrix(X.ABA)
+  X.CNDR <- matrix(NA,nrow=length(CNDR.names),ncol=ncol(X.ABA)) # make new vector to hold data, default is NA
+  colnames(X.CNDR) <- colnames(X.ABA)
+  rownames(X.CNDR) <- CNDR.names
   for(CNDR.region in CNDR.names){
     ABA.region.match <- ABA.to.CNDR.key[[CNDR.region]] # get ABA region(s) corresponding to that CNDR region, if any
     if(length(ABA.region.match) > 0){      # print out names in key that aren't in ABA connectome
       display.missing.items(names(X.ABA),ABA.region.match,'Designation names not in ABA connectome names:')
-      X.CNDR[CNDR.region] <- mean(X.ABA[ABA.region.match])
+      X.CNDR[CNDR.region,] <- colMeans(X.ABA[rownames(X.ABA) %in% ABA.region.match,,drop=FALSE]) # average together ABA regions in each CNDR region, for all columns
     } else if(length(ABA.region.match) ==0){# otherwise if no match, leave as NA    
       print(paste('no match for CNDR region',CNDR.region))
     }
@@ -84,12 +82,18 @@ get.Xo <- function(region.names,ROIs){
   return(Xo)
 }
 
-get.Lout <- function(W,S){
+get.Lout <- function(W,S,ant.ret='retro'){
+  # INPUTS:
   # W: NxN adjacency matrix, may be asymmetric (if so, connections are from row i to column j)  
   # S: vector of weights to apply to each row of W (here, synuclein expression)
-  # The connections directionallity here is opposite the convention for matrix multiplication
+  # ant.ret: character specifying anterograde or retrograde spread
+  #
+  # The connection matrix's default directionallity here is opposite the convention for matrix multiplication
   # so we are capturing retrograde spread along connections
   # compute out-degree laplacian for retrograde spread
+  #
+  # OUTPUTS:
+  # return specified laplacian
 
   n.regions <- nrow(W)
   W <- W * !diag(n.regions) # get rid of diagonal
@@ -105,18 +109,21 @@ get.Lout <- function(W,S){
 
   in.deg <- colSums(W)
   out.deg <- rowSums(W)
-  L.out <- diag(x = out.deg) - W # outdegree laplacian
+  if(ant.ret=='retro'){L.out <- diag(x = out.deg) - W} # outdegree laplacian
+  if(ant.ret=='antero'){L.out <- diag(x = in.deg) - t(W)} #indegree laplacian and transposed matrix for anterograde
   return(L.out)
 }
 
-predict.Lout <- function(L,Xo,c,t=1){
+predict.Lout <- function(L,Xo,c,t=1,fxn=expm::expm){
   # Generate prediction for given time points using
   # L: Laplacian of adjacency matrix
   # Xo: initial conditions
   # c: time constant
   # t: time points
+  # fxn: function for matrix exponential. default is expm from expm package
+  # but can input python's scipy.linalg.expm using reticulate for faster performance (not as fast as matlab or python native though)
 
-  Xt <- do.call('cbind', lapply(t, function(t.i) expm(-L*c*t.i)%*%Xo))
+  Xt <- do.call('cbind', lapply(t, function(t.i) fxn(-L*c*t.i)%*%Xo))
   rownames(Xt) <- rownames(Xo)
   return(Xt)
 }
@@ -159,23 +166,28 @@ c.CNDRspace.fit <- function(log.path,tps,L.out,Xo,c.rng,ABA.to.CNDR.key){
   # c: optimal time constant within c.rng for predicting log.path
   
   # exclusion mask... don't count regions with 0 path
-  mask <- lapply(log.path,function(X) X != -Inf)
-  log.path <- lapply(1:length(log.path), function(t) log.path[[t]][mask[[t]]])
+  scipy.linalg <- reticulate::import('scipy.linalg') # import python function for matrix exponential because it's faster
+  mask <- lapply(log.path,function(X) X == -Inf)
+  #log.path <- lapply(1:length(log.path), function(t) log.path[[t]][mask[[t]]])
   # compute fit at each time point for range of time
-  Xt.sweep <- rep(NA,length(c.rng))
+  Xt.sweep <- matrix(NA,nrow=length(c.rng),ncol=length(tps))
   for(c.i in 1:length(c.rng)){ # no time here, because in this project there's only 1 time pointo 
   print(paste0('c ',c.i,' out of ',length(c.rng)))
     c.val <- c.rng[c.i]
-    Xt.c <- lapply(tps,function(t) predict.Lout(L.out,Xo,c.val,t)) # predict path using linear diff model
-    Xt.c <- lapply(1:length(tps), function(t) quiet(map.ABA.to.CNDR(Xt.c[[t]],names(log.path[[t]]),ABA.to.CNDR.key))) # convert to CNDR space
-    mask <- lapply(Xt.c, function(Xt) !is.na(Xt))
+    #ptm <- proc.time()
+    Xt.c <- do.call('cbind',lapply(tps,function(t) predict.Lout(L.out,Xo,c.val,t,fxn=scipy.linalg$expm))) # predict path using linear diff model into matrix that is region-by-time
+    #print(paste0('predict: ',(proc.time()-ptm)['elapsed']))
+    #ptm <- proc.time()
+    Xt.c <- quiet(map.ABA.to.CNDR(Xt.c,names(log.path[[1]]),ABA.to.CNDR.key)) # convert matrix to CNDR space
+    #print(paste0('map: ',(proc.time()-ptm)['elapsed']))
+    mask <- lapply(1:length(tps), function(t) is.na(Xt.c[,t]) | mask[[t]])
     #lapply(1:length(tps), function(t) print(paste('missing CNDR region',names(Xt.c[[t]])[!mask[[t]]],'from ABA connectome')))
-    Xt.sweep[c.i] <- mean(sapply(1:length(tps), function(t) cor(log.path[[t]][mask[[t]]],log(Xt.c[[t]][mask[[t]]],base=10))))
+    Xt.sweep[c.i,] <- sapply(1:length(tps), function(t) cor(log.path[[t]][!mask[[t]]],log(Xt.c[!mask[[t]],t],base=10)))
   }
-  c.best <- c.rng[which.max(Xt.sweep)] # select c giving max correlation
+  c.best <- c.rng[which.max(rowMeans(Xt.sweep))] # select c giving max correlation
   print(c.best)
 
-  return(c.best)
+  return(list(c.best=c.best,Xt.sweep=Xt.sweep))
 }
 
 c.ABAspace.fit <- function(log.path,L.out,Xo,c.rng,CNDR.to.ABA.key){

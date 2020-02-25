@@ -6,7 +6,7 @@ params <- list(basedir=basedir,
                injection.site=c('iDG','iVISam'), # define injection sites (using ABA nomenclature)
                tps=c(1,3,6,9), # define time points post injection
                c.min = 1e-5, # empirically conservative minimum for time constant
-               c.max = 10, # empirically conservative maximum for time constant
+               c.max = 1, # empirically conservative maximum for time constant
                c.n = 100) # number of time constants to try
 source('code/misc/miscfxns.R')
 params$source.save <- source.save
@@ -39,24 +39,17 @@ source('code/aba/download_gene_expression.R') # specify variable gois in this fi
 #######################
 
 for(grp in params$grps){
-  source('code/diffmodel/analyzespread_CNDRspace.R')
-  source('code/diffmodel/plotCNDRspacefit.R')
+  source('code/diffmodel/analyzebidirectionalspread_CNDRspace.R')
+  #goi <- 'Mapt'
+  #probe <- 'RP_071204_01_D02'
+  source('code/diffmodel/plotCNDRspacebidirectionalfit.R')
 }
 
 ####################################
 ### Tau weighted diffusion model ###
 ####################################
 
-goi <- 'Mapt'
-probe <- 'RP_071204_01_D02'
 for(grp in params$grps){
   #source('code/diffmodel/analyzespread_weighted_CNDRspace.R')
   #source('code/diffmodel/plotWeightedCNDRspacefit.R')
-  params$source.save(script = 'code/diffmodel/TauConnectivityRSquare.R',
-                     output=paste0(params$opdir,'diffmodel/',grp,goi,probe,'VarExplained.log'))
 }
-
-#######################################################
-### Variance explained by synuclein vs connectivity ###
-#######################################################
-

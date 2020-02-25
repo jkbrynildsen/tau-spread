@@ -23,7 +23,5 @@ df.expression <- ontology.get.expression.df(region.names,region.names.id.key,goi
 write.csv(x = df.expression,file = paste0(abadir,'expression/GeneExpressionABA.csv'),row.names = FALSE)
 
 ## gene expression used for this project ##
-Tau <- as.matrix(df.expression$Mapt_RP_071204_01_D02)
-rownames(Tau) <- region.names
-Tau <- map.ABA.to.CNDR(Tau,path.names,ABA.to.CNDR.key)
+Tau <- map.ABA.to.CNDR(df.expression,path.names,ABA.to.CNDR.key)
 write.csv(x = Tau,file = paste0(abadir,'expression/',gois$Tau$goi,gois$Tau$probe,'ExpressionCNDR.csv'))
