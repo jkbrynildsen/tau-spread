@@ -2,11 +2,11 @@
 ### Load data ###
 #################
 
-rm(list=setdiff(ls(),c('params','grp')))
+rm(list=setdiff(ls(),c('params','grp','injection.site')))
 print(grp)
 basedir <- params$basedir
 setwd(basedir)
-savedir <- paste(params$opdir,'diffmodel/bidirectional/',sep='')
+savedir <- paste(params$opdir,'diffmodel/bidirectional/',paste0(injection.site,collapse='-'),'/',sep='')
 dir.create(savedir,recursive=T)
 
 source('code/misc/fitfxns.R')

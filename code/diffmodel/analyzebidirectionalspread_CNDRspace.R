@@ -2,11 +2,11 @@
 ### Load data ###
 #################
 
-rm(list=setdiff(ls(),c('params','grp')))
+rm(list=setdiff(ls(),c('params','grp','injection.site')))
 print(grp)
 basedir <- params$basedir
 setwd(basedir)
-savedir <- paste0(params$opdir,'diffmodel/bidirectional/')
+savedir <- paste(params$opdir,'diffmodel/bidirectional/',paste0(injection.site,collapse='-'),'/',sep='')
 dir.create(savedir,recursive=T)
 
 source('code/misc/fitfxns.R')
@@ -25,7 +25,7 @@ L.out.antero <- get.Lout(W,rep(1,n.regions.ABA),ant.ret='antero') # compute out-
 # Fit time scaling parameter on average of all mice
 c.rng <- seq(params$c.min,params$c.max,length.out = params$c.n) # scaling parameter
 log.path <- lapply(Grp.mean, function(X) log(X,base=10))
-Xo <- get.Xo(region.names,params$injection.site) # seed pathology in iCPu
+Xo <- get.Xo(region.names,injection.site) # seed pathology in iCPu
 list[c.Grp.retro,Xt.sweep.retro] <- c.CNDRspace.fit(log.path,tps,L.out.retro,Xo,c.rng,ABA.to.CNDR.key)
 list[c.Grp.antero,Xt.sweep.antero] <- c.CNDRspace.fit(log.path,tps,L.out.antero,Xo,c.rng,ABA.to.CNDR.key)
 

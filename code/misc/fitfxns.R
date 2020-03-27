@@ -1,3 +1,5 @@
+source('code/misc/miscfxns.R')
+
 ##################################
 ### Atlas conversion functions ###
 ##################################
@@ -114,14 +116,15 @@ get.Lout <- function(W,S,ant.ret='retro'){
   return(L.out)
 }
 
-predict.Lout <- function(L,Xo,c,t=1,fxn=expm::expm){
+predict.Lout <- function(L,Xo,c,t=1,fxn=reticulate::import('scipy.linalg')$expm){
   # Generate prediction for given time points using
   # L: Laplacian of adjacency matrix
   # Xo: initial conditions
   # c: time constant
   # t: time points
-  # fxn: function for matrix exponential. default is expm from expm package
-  # but can input python's scipy.linalg.expm using reticulate for faster performance (not as fast as matlab or python native though)
+  # fxn: function for matrix exponential. default is python's scipy.linalg.expm 
+  # using reticulate for faster performance (not as fast as matlab or python native though)
+  # but R would have you use expm::expm() which is v slow
 
   Xt <- do.call('cbind', lapply(t, function(t.i) fxn(-L*c*t.i)%*%Xo))
   rownames(Xt) <- rownames(Xo)

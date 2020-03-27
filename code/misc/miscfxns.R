@@ -62,3 +62,44 @@ quiet <- function(x) {
   on.exit(sink()) 
   invisible(force(x)) 
 } 
+
+name <- function(x,x.names){
+	# INPUTS:
+	# x: vector or dataframe
+	# x.names: names for elements or columns of x
+	# OUTPUTS:
+	# x with x.names as names
+	names(x) <- x.names
+	return(x)
+}
+
+collapse.columns <- function(df,cnames=colnames(df),groupby=NULL){
+  # INPUTS:
+  # df: dataframe
+  # cnames: column names to perform operation on, default to all columns
+  # groupby: column name to group variables by, treated separately from variables in cnames
+  
+  # OUTPUTS:
+  # df.new: dataframe with 2 columns:
+  # values: all columns in cnames vertically concatenated. 
+  # names: elements of cnames corresponding to rows
+  # group: groups of observations in df for each variable in cnames
+  
+  df.names <- do.call('cbind',lapply(cnames, function(n) rep(n,nrow(as.matrix(df[,cnames])))))  
+  df.new <- data.frame(values = as.vector(as.matrix(df[,cnames])),names=as.vector(df.names))
+  if(!is.null(groupby)){
+    df.grp <- do.call('cbind',lapply(cnames,function(n) df[,groupby]))
+    df.new$group <- as.vector(df.grp)
+  }
+  return(df.new)
+}
+
+col.Which.Max <- function(x){
+  cwm <- unlist(apply(x,2,function(y) which.max(y)))
+  return(cwm)
+}
+
+row.Which.Max <- function(x){
+  rwm <- unlist(apply(x,1,function(y) which.max(y)))
+  return(rwm)
+}
