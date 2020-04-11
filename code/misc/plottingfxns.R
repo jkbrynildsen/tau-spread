@@ -1,3 +1,9 @@
+colorvis <- function(COL){
+  plot(NULL, xlim=c(0,length(COL)), ylim=c(0,1), 
+       xlab="", ylab="", xaxt="n", yaxt="n")
+  rect(0:(length(COL)-1), 0, 1:length(COL), 1, col=COL)
+}
+
 plot.Xt <- function(Xt,t.){
   # Xt: NxT matrix of nodal value (N) over time (T)
   # t.: numerical values of time t
@@ -35,8 +41,37 @@ p.xy <- function(x,y,xlab,ylab,ttl='',col='black',alpha=1){
   return(p)
 }
 
+p.xyc <- function(x,y,ca,cmap='Set1',xlab,ylab,ttl='',col='black',alpha=1){
+  # INPUTS:
+  # x: x variable, vector
+  # y: y variable, vector
+  # ca: variable that scales color axis
+  # cmap: RColorBrewer palette name
+  # xlab, ylab, ttl: character labels for axes
+  # col: line color, RGB hex code or R native color or RGB value
+  # alpha: opacity of points
+  #
+  # OUTPUTS:
+  # scatter plot with r and p value for pearson correlation between x and y
+  # and linear fit
+
+  df <- data.frame(x=x,y=y)
+  df <- inf.nan.mask(df)
+  c.test <- cor.test(df$x,df$y)
+  r.text <- paste0('r = ',signif(c.test$estimate,2),'\np = ',signif(c.test$p.value,2)) # annotation
+
+  p <- ggplot(df) + geom_point(aes(x=x,y=y,color=ca),stroke=0,alpha=alpha) + geom_smooth(aes(x=x,y=y),fill=col,color=col,method='lm') + 
+    xlab(xlab) + ylab(ylab) + ggtitle(ttl) + 
+    scale_color_brewer(palette=cmap) +
+    annotate("text",size = 2, x = Inf,y =-Inf, label = r.text,hjust=1,vjust=-0.2) +
+      theme_classic() + theme(text = element_text(size = 8)) + 
+      theme(plot.title = element_text(size=8,hjust=0.5,face = "bold")) +
+      theme(plot.margin=grid::unit(c(0,0,0,0), "mm")) + theme(legend.position = 'none')
+  return(p)
+}
+
 imagesc <- function(X,caxis_name='',cmap='plasma',caxis_labels=NULL,clim=c(min(X,na.rm=T),max(X,na.rm=T)),
-  xlabel='',ylabel='',yticklabels=rownames(X),xticklabels=as.character(colnames(X))){
+  xlabel='',ylabel='',yticklabels=rownames(X),xticklabels=as.character(colnames(X)),ttl=''){
   # INPUTS:
   # X: matrix with dim names
   #
@@ -72,8 +107,21 @@ imagesc <- function(X,caxis_name='',cmap='plasma',caxis_labels=NULL,clim=c(min(X
                            na.value = 'grey',name=caxis_name,breaks=caxis_breaks,labels=caxis_labels)
   } 
   p <- p + theme_bw()
-  p <- p + xlab(xlabel)+ylab(ylabel)+
-      theme(text=element_text(size=8))
+  p <- p + xlab(xlabel)+ylab(ylabel)+ ggtitle(ttl)+
+      theme(text=element_text(size=8),plot.title=element_text(hjust=0.5,size=8,face='bold'))
   return(p)
 
+}
+
+nice_cbar <- function(pos='right'){
+  if(pos=='bottom' | pos == 'top'){
+    thm <- theme(legend.box = 'none',legend.background = element_blank(),
+            legend.margin = ggplot2::margin(0,0,0,0),
+            legend.position = pos,legend.key.height = unit(0.1,units='cm'),legend.key.width=unit(1.25,'cm'))
+  } else if(pos=='left' | pos == 'right'){
+    thm <- theme(legend.box = 'none',legend.background = element_blank(),
+            legend.margin = ggplot2::margin(0,0,0,0),
+            legend.position = pos,legend.key.width=unit(0.1,'cm'))
+  }
+  return(thm)
 }

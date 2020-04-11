@@ -103,3 +103,44 @@ row.Which.Max <- function(x){
   rwm <- unlist(apply(x,1,function(y) which.max(y)))
   return(rwm)
 }
+
+hemi.split <- function(df,rename = FALSE){
+	# INPUTS: 
+	# df: data frame whose rownames are region names with i/c for ipsi contra
+	# rename: logical indicating whether to rename rows by region name without i/c designation
+	#
+	# OUTPUTS: df split by hemisphere based on rownames
+
+	hemi <- substr(rownames(df),start=1,stop=1)
+	df.i <- df[hemi=='i',,drop=FALSE]
+	df.c <- df[hemi=='c',,drop=FALSE]
+	names.base.i <- substr(rownames(df.i),start=2,stop=nchar(rownames(df.i)))
+	names.base.c <- substr(rownames(df.c),start=2,stop=nchar(rownames(df.c)))
+	if(identical(names.base.i,names.base.c) & rename){
+		rownames(df.c) <- names.base.i
+		rownames(df.i) <- names.base.i
+	}
+	return(list(df.i=df.i,df.c=df.c))
+}
+hemi.average <- function(df,r.v=FALSE){
+	# INPUTS:
+	# df: data frame whose row names are ABA regions with 'i' or 'c' as first character
+	# r.v: logical indicating whether to return named vector instead of data frame
+	#
+	# OUTPUTS:
+	# df averaged over columns (time) then across hemispheres
+	if(is.vector(df)){df <- data.frame(Path=df)}
+	list[df.i,df.c] <- hemi.split(df)
+	names.base.i <- substr(rownames(df.i),start=2,stop=nchar(rownames(df.i)))
+	names.base.c <- substr(rownames(df.c),start=2,stop=nchar(rownames(df.c)))
+	df.c <- df.c[match(names.base.i,names.base.c),,drop=FALSE] # match to order of ipsi hemisphere
+	if(identical(names.base.i,names.base.c)){
+		rownames(df.c) <- names.base.i
+		rownames(df.i) <- names.base.i
+		df.c <- rowMeans(df.c,na.rm=T)
+		df.i <- rowMeans(df.i,na.rm=T)
+		if(!r.v){return(data.frame(v=rowMeans(cbind(df.i,df.c),na.rm=T)))}
+		if(r.v){return(rowMeans(cbind(df.i,df.c),na.rm=T))}
+	}
+	
+}

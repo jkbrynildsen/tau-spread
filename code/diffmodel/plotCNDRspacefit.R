@@ -31,19 +31,29 @@ ggsave(p,filename = paste(savedir,grp,'CNDRSpaceFit_basemodel.pdf',sep=''),
 ### Save predicted values and vulnerability ###
 ###############################################
 
-m <- lapply(df, function(df.i) m <- lm(path~pred,data=inf.nan.mask(df.i)))
+m <- lapply(df, function(df.i) m <- lm(path~pred,data=inf.nan.mask(df.i))) # compute residuals
 vulnerability <- lapply(m,residuals)
+# initialize empty data frame with all CNDR regions and time points
+df.vuln <- data.frame(matrix(ncol=length(tps),nrow=n.regions.CNDR, dimnames=list(path.names, paste(tps,'MPI'))),check.names = FALSE)
+for(t in 1:length(tps)){
+  regions.mpi <- names(vulnerability[[t]]) # get the regions that had non-zero pathology at each tp (so log can be computed)
+  df.vuln[regions.mpi,paste(tps[t],'MPI')] <- vulnerability[[t]][regions.mpi]
+}
 
-lapply(1:length(tps),function(t) write.csv(data.frame(vuln=vulnerability[[t]]),paste0(savedir,grp,'vulnerability',tps[t],'MPI.csv')))
-lapply(1:length(tps),function(t) write.csv(data.frame(pred=df[[t]][,'pred',drop=FALSE]),paste0(savedir,grp,'predictedpath',tps[t],'MPI.csv')))
-                                                                             
+write.csv(hemi.average(df.vuln),paste0(savedir,grp,'vulnerability_hemiaverage.csv'))
+df.vuln <- cbind(df.vuln,Average=rowMeans(df.vuln,na.rm = T)) # compute average vulnerability across time points, ignoring regions with 0 path
+write.csv(df.vuln,paste0(savedir,grp,'vulnerability.csv'))
+
+df.pred <- do.call(cbind,lapply(df,function(X) X[,'pred',drop=FALSE])) # get log10 predicted pathology
+write.csv(df.pred,paste0(savedir,grp,'log10predictedpath.csv'))
+
 #####################
 ### Add gene data ###
 #####################
 
 # load gene data specified by goi, probe input variables
 gene.exp <- read.csv(paste0(basedir,'data/aba/expression/',goi,probe,'ExpressionCNDR.csv'),row.names = 1)
-df.gene <- lapply(df, function(x) merge(x,gene.exp,by=0)) # merge
+df.gene <- lapply(df, function(x) merge(x,gene.exp,by=0)) # merge with pathology data frame
 for(j in 1:length(df.gene)){rownames(df.gene[[j]]) <- df.gene[[j]]$Row.names} # remove row names
 for(j in 1:length(df.gene)){df.gene[[j]] <- df.gene[[j]][,-1]}
 
@@ -73,5 +83,17 @@ p <- lapply(1:length(tps), function(t)
 p <- plot_grid(plotlist=p,align='hv',nrow=1)
 ggsave(p,filename = paste(savedir,grp,'CNDRSpaceFit_basemodel+',goi,probe,'.pdf',sep=''),
        units = 'cm',height = 3.75,width = 3.75*length(tps))
-lapply(1:length(tps),function(t) write.csv(data.frame(vuln=vulnerability[[t]]),paste0(savedir,grp,'vulnerability',tps[t],'MPI',goi,probe,'.csv')))
-lapply(1:length(tps),function(t) write.csv(data.frame(pred=pred[[t]]),paste0(savedir,grp,'predictedpath',tps[t],'MPI',goi,probe,'.csv')))
+
+# concatenate predicted path (fitted vals, y-hat) and vulnerability (residuals, y-yhat) into one dataframe
+# initialize empty data frame with all CNDR regions and time points
+df.vuln <- df.pred <- data.frame(matrix(ncol=length(tps),nrow=n.regions.CNDR, dimnames=list(path.names, paste(tps,'MPI'))),check.names = FALSE)
+for(t in 1:length(tps)){
+  regions.mpi <- names(vulnerability[[t]]) # get the regions that had non-zero pathology at each tp (so log can be computed)
+  df.vuln[regions.mpi,paste(tps[t],'MPI')] <- vulnerability[[t]][regions.mpi]
+  df.pred[regions.mpi,paste(tps[t],'MPI')] <- pred[[t]][regions.mpi]
+}
+
+write.csv(hemi.average(df.vuln),paste0(savedir,grp,'vulnerability',goi,probe,'_hemiaverage.csv'))
+df.vuln <- cbind(df.vuln,Average=rowMeans(df.vuln,na.rm = T)) # compute average vulnerability across time points, ignoring regions with 0 path
+write.csv(df.vuln,paste0(savedir,grp,'vulnerability',goi,probe,'.csv'))
+write.csv(df.pred,paste0(savedir,grp,'predictedpath',goi,probe,'.csv'))

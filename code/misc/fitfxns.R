@@ -170,11 +170,10 @@ c.CNDRspace.fit <- function(log.path,tps,L.out,Xo,c.rng,ABA.to.CNDR.key){
   
   # exclusion mask... don't count regions with 0 path
   scipy.linalg <- reticulate::import('scipy.linalg') # import python function for matrix exponential because it's faster
-  mask <- lapply(log.path,function(X) X == -Inf)
   #log.path <- lapply(1:length(log.path), function(t) log.path[[t]][mask[[t]]])
   # compute fit at each time point for range of time
   Xt.sweep <- matrix(NA,nrow=length(c.rng),ncol=length(tps))
-  for(c.i in 1:length(c.rng)){ # no time here, because in this project there's only 1 time pointo 
+  for(c.i in 1:length(c.rng)){
   print(paste0('c ',c.i,' out of ',length(c.rng)))
     c.val <- c.rng[c.i]
     #ptm <- proc.time()
@@ -183,14 +182,29 @@ c.CNDRspace.fit <- function(log.path,tps,L.out,Xo,c.rng,ABA.to.CNDR.key){
     #ptm <- proc.time()
     Xt.c <- quiet(map.ABA.to.CNDR(Xt.c,names(log.path[[1]]),ABA.to.CNDR.key)) # convert matrix to CNDR space
     #print(paste0('map: ',(proc.time()-ptm)['elapsed']))
-    mask <- lapply(1:length(tps), function(t) is.na(Xt.c[,t]) | mask[[t]])
+    Xt.sweep[c.i,] <- sapply(1:length(tps), function(t) cor.mask(Xt.c[,t],log.path[[t]])) # this replaces the two lines below
+    #mask <- lapply(1:length(tps), function(t) is.na(Xt.c[,t]) | mask[[t]])
     #lapply(1:length(tps), function(t) print(paste('missing CNDR region',names(Xt.c[[t]])[!mask[[t]]],'from ABA connectome')))
-    Xt.sweep[c.i,] <- sapply(1:length(tps), function(t) cor(log.path[[t]][!mask[[t]]],log(Xt.c[!mask[[t]],t],base=10)))
+    #Xt.sweep[c.i,] <- sapply(1:length(tps), function(t) cor(log.path[[t]][!mask[[t]]],log(Xt.c[!mask[[t]],t],base=10)))
   }
   c.best <- c.rng[which.max(rowMeans(Xt.sweep))] # select c giving max correlation
   print(c.best)
 
   return(list(c.best=c.best,Xt.sweep=Xt.sweep))
+}
+
+cor.mask <- function(Xt,y){
+  # INPUTS:
+  # Xt: predicted pathology
+  # y: observed log pathology
+  #
+  # OUTPUTS:
+  # compute pearson correlation between log predicted (computed) and log observed (input)
+  # excluding elements that were originally 0 and thus log(0) = -Inf
+  Xt <- log(Xt,base=10)
+
+  mask <- y == -Inf | Xt == -Inf | is.na(Xt)
+  return(cor(y[!mask],Xt[!mask]))
 }
 
 c.ABAspace.fit <- function(log.path,L.out,Xo,c.rng,CNDR.to.ABA.key){
