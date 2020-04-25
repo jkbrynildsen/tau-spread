@@ -57,7 +57,7 @@ p <- ggplot(df.flat) + geom_jitter(aes(x=group,y=values,color=names),alpha=0.5,s
   annotate(geom='text',x=paste(tps,'MPI'),y=Inf,label=plabs,size=2.5,vjust=1)+ ylab('Vulnerability') + xlab('')+
   scale_color_brewer(palette='Set1') + theme_classic() + theme(text=element_text(size=8),legend.title = element_blank())
 ggsave(p,filename = paste(savedir,grp,'CompareVulnerabilityBetweenHemispheres.pdf',sep=''),
-       units = 'cm',height = 9,width = 10)
+       units = 'cm',height = 9,width = 10,useDingbats=FALSE)
 
 # now plot spatial similarity of vulnerability
 r.mat <- cor(df.plt,use = 'pairwise.complete.obs')

@@ -26,7 +26,7 @@ c.CNDRspace.objective <- function(params.opt,log.path,tps,L.out.retro,L.out.ante
   # fits time constant by modeling CNDR data
   # INPUTS:
   # OPTIMIZED:
-  # params.opt: parameters to optimize cor(observed path, b0 + b.r*retro(c.retro) + b.a*antero(c.antero))
+  # params.opt: c parameters to optimize cor(observed path, b0 + b.r*retro(c.retro) + b.a*antero(c.antero))
   #     -c.retro: time constant for retrograde model --- params[1]
   #     -c.antero: time constant for anterograde model --- params[2]
   #     -lm.mask.ant.ret fits linear model to find b0, b.a, b.r for each c.retro,c.antero pair

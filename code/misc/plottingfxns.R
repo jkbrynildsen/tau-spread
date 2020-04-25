@@ -15,13 +15,15 @@ plot.Xt <- function(Xt,t.){
 
 }
 
-p.xy <- function(x,y,xlab,ylab,ttl='',col='black',alpha=1){
+p.xy <- function(x,y,xlab,ylab,ttl='',col='black',alpha=1,sm.method = 'lm',formula=NULL){
   # INPUTS:
   # x: x variable, vector
   # y: y variable, vector
   # xlab, ylab, ttl: character labels for axes
   # col: point color and line color, RGB hex code or R native color or RGB value
   # alpha: opacity of points
+  # sm.method: method for geom_smooth to draw line of best fit
+  # formula: if using gam or nonlinear fit, provide formula
   #
   # OUTPUTS:
   # scatter plot with r and p value for pearson correlation between x and y
@@ -32,7 +34,8 @@ p.xy <- function(x,y,xlab,ylab,ttl='',col='black',alpha=1){
   c.test <- cor.test(df$x,df$y)
   r.text <- paste0('r = ',signif(c.test$estimate,2),'\np = ',signif(c.test$p.value,2)) # annotation
 
-  p <- ggplot(df) + geom_point(aes(x=x,y=y),color=col,stroke=0,alpha=alpha) + geom_smooth(aes(x=x,y=y),fill=col,color=col,method='lm') + 
+  p <- ggplot(df) + geom_point(aes(x=x,y=y),color=col,stroke=0,alpha=alpha) + 
+  geom_smooth(aes(x=x,y=y),fill=col,color=col,method=sm.method,formula=formula) + 
     xlab(xlab) + ylab(ylab) + ggtitle(ttl) + 
     annotate("text",size = 2, x = Inf,y =-Inf, label = r.text,hjust=1,vjust=-0.2) +
       theme_classic() + theme(text = element_text(size = 8)) + 
@@ -71,7 +74,7 @@ p.xyc <- function(x,y,ca,cmap='Set1',xlab,ylab,ttl='',col='black',alpha=1){
 }
 
 imagesc <- function(X,caxis_name='',cmap='plasma',caxis_labels=NULL,clim=c(min(X,na.rm=T),max(X,na.rm=T)),
-  xlabel='',ylabel='',yticklabels=rownames(X),xticklabels=as.character(colnames(X)),ttl=''){
+  xlabel='',ylabel='',yticklabels=rownames(X),xticklabels=as.character(colnames(X)),ttl='',noticks=FALSE){
   # INPUTS:
   # X: matrix with dim names
   #
@@ -84,6 +87,9 @@ imagesc <- function(X,caxis_name='',cmap='plasma',caxis_labels=NULL,clim=c(min(X
   } else if(is.character(caxis_labels)){ # if axis is discrete then autogenerate breaks and label with provided labels
     caxis_breaks<-labeling::extended(clim[1], clim[2], m = length(caxis_labels))
   }
+  if(length(yticklabels) == 0){yticklabels <- rownames(X) <- as.character(1:nrow(X))}
+  if(length(xticklabels) == 0){xticklabels <- colnames(X) <- as.character(1:ncol(X))}
+
   X[X>max(clim)] <- max(clim) # threshold data based on color axis
   X[X < min(clim)] <- min(clim)
 
@@ -109,6 +115,8 @@ imagesc <- function(X,caxis_name='',cmap='plasma',caxis_labels=NULL,clim=c(min(X
   p <- p + theme_bw()
   p <- p + xlab(xlabel)+ylab(ylabel)+ ggtitle(ttl)+
       theme(text=element_text(size=8),plot.title=element_text(hjust=0.5,size=8,face='bold'))
+  if(noticks){p <- p + theme_void()}
+
   return(p)
 
 }

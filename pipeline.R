@@ -4,7 +4,8 @@ setwd(basedir)
 params <- list(basedir=basedir,               
                grps = c('NTG','G20'),
                #injection.site=c('iDG','iVISam'), # define injection sites (using ABA nomenclature)
-               injection.site = c('iDG', 'iCA1', 'iCA3', 'iVISam', 'iRSPagl'), # new sites
+               injection.site = c('iDG', 'iCA1', 'iCA3', 'iVISam', 'iRSPagl'), # injection sites (using ABA nomenclature)
+               injection.site.CNDR = c(iDG='iDG', iCA1='iCA1', iCA3='iCA3', iVISam='iVISam', iRSPagl='iRSP'), # convert ABA injection sites to CNDR
                tps=c(1,3,6,9), # define time points post injection
                c.min = 1e-5, # empirically conservative minimum for time constant
                c.max = 0.2, # empirically conservative maximum for time constant
@@ -35,6 +36,12 @@ source('code/process/process.R')
 source('code/aba/process_ontology.R')
 source('code/aba/download_gene_expression.R') # specify variable gois in this file to get expression for whatever genes you want
 
+###################################################
+### Get euclidean distances between ABA regions ###
+###################################################
+
+source('code/aba/atlas_structures.R') # required for most scripts in code/nullmodels/
+
 #######################
 ### Diffusion model ###
 #######################
@@ -44,7 +51,7 @@ injection.sites <- c(as.list(params$injection.site),list(params$injection.site),
 # retrograde model with additive Mapt expression
 for(injection.site in injection.sites){
   for(grp in params$grps){
-    source('code/diffmodel/analyzespread_CNDRspace.R')
+    #source('code/diffmodel/analyzespread_CNDRspace.R')
     goi <- 'Mapt'
     probe <- 'RP_071204_01_D02'
     source('code/diffmodel/plotCNDRspacefit.R')
@@ -55,10 +62,11 @@ for(injection.site in injection.sites){
 injection.sites <- c(as.list(params$injection.site),list(params$injection.site),list(c('iDG','iCA1','iCA3')))
 # bidirectional, independent, additive diffusion model: anterograde and retrograde additive and independent
 for(injection.site in injection.sites){
+  print(injection.site)
   for(grp in params$grps){
+    source('code/diffmodel/optim_bidirectionalspread_CNDRspace.R')
     goi <- 'Mapt'
     probe <- 'RP_071204_01_D02'
-    #source('code/diffmodel/optim_bidirectionalspread_CNDRspace.R')
     source('code/diffmodel/plotCNDRspacebidirectionalfit.R')
   }
 }
@@ -70,6 +78,22 @@ for(injection.site in injection.sites){
 for(grp in params$grps){
   source('code/diffmodel/seedspec.R')
   source('code/diffmodel/plotseedspec.R')
+}
+
+###########################
+### Network null models ###
+###########################
+
+# use each seed site separately, all together, and then do entire hippocampus
+injection.sites <- c(as.list(params$injection.site),list(params$injection.site),list(c('iDG','iCA1','iCA3')))
+# retrograde model with additive Mapt expression
+for(injection.site in injection.sites){
+  for(grp in params$grps){
+    #source('code/nullmodels/analyzespread_Euclidean_CNDRspace.R')
+    goi <- 'Mapt'
+    probe <- 'RP_071204_01_D02'
+    source('code/nullmodels/plotCNDRspaceEuclideanfit.R')
+  }
 }
 
 ############################
@@ -95,3 +119,6 @@ for(injection.site in injection.sites){
   }
 }
 
+# in silico injections with bidirectional model time constants and regression weights
+injection.sites <- c('iENTl', 'iSNc', 'iCP'); grp <- 'NTG'
+for(injection.site in injection.sites){source('code/diffmodel/insilico_inject.R')}

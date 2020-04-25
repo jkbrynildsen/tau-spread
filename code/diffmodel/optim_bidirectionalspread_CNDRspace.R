@@ -30,14 +30,7 @@ L.out.antero <- get.Lout(W,rep(1,n.regions.ABA),ant.ret='antero') # compute out-
 #########################################################################################
 
 Xo <- get.Xo(region.names,injection.site) # seed pathology in iCPu
-scipy.linalg <- reticulate::import('scipy.linalg') # import scipy matrix exponential function because it's faster
-params.opt <- c(0.006070303,0.02223111) # c.retro, c.antero: use values from independent fit to initialize
-params.opt <- c(0.01,0.01) # c.retro, c.antero: use values from independent fit to initialize
-ctrl <- list(fnscale=-1) # maximize the objective function instead of minimizing (default)
-
-params.opt.fit <- optim(params.opt,c.CNDRspace.objective,control = ctrl, lower=c(10e-7,10e-7), # optimization. c's must be > 0
-      log.path=log.path,tps=tps,L.out.retro=L.out.retro,L.out.antero=L.out.antero,
-      Xo=Xo,ABA.to.CNDR.key=ABA.to.CNDR.key,fxn =scipy.linalg$expm) # static inputs
+source('code/misc/optimsetupmain.R')
 
 # extract parameters from 
 c.Grp.retro <- params.opt.fit$par[1]
@@ -47,4 +40,6 @@ c.Grp.antero <- params.opt.fit$par[2]
 Xt.Grp.retro <- do.call('cbind',lapply(tps, function(t) log(quiet(map.ABA.to.CNDR(predict.Lout(L.out.retro,Xo,c.Grp.retro,t,fxn=scipy.linalg$expm),path.names,ABA.to.CNDR.key)), base = 10))) # predict pathology using connectivity, time constant, and seed
 Xt.Grp.antero <- do.call('cbind',lapply(tps, function(t) log(quiet(map.ABA.to.CNDR(predict.Lout(L.out.antero,Xo,c.Grp.antero,t,fxn=scipy.linalg$expm),path.names,ABA.to.CNDR.key)), base = 10))) # predict pathology using connectivity, time constant, and seed
 df <- lapply(1:length(tps), function(t) data.frame(path = log.path[[t]], pred.retro = Xt.Grp.retro[,t,drop=FALSE], pred.antero = Xt.Grp.antero[,t,drop=FALSE]))
-save(df,c.Grp.antero,c.Grp.retro,file = paste(savedir,grp,'CNDRSpaceBidirectionalFit_data.RData',sep=''))
+m <- lapply(df, function(df.i) lm(path~pred.retro+pred.antero,data=inf.nan.mask(df.i))) # fit linear regression at each time point to combine anterograde and retrograde
+m.fits <- sapply(m, function(m.i) cor(m.i$fitted.values,m.i$model$path)) # extract fits as pearson r
+save(df,c.Grp.antero,c.Grp.retro,m,m.fits,file = paste(savedir,grp,'CNDRSpaceBidirectionalFit_data.RData',sep=''))

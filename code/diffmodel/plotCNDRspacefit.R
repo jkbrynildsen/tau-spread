@@ -27,6 +27,16 @@ p <- plot_grid(plotlist=p,align='hv',nrow=1)
 ggsave(p,filename = paste(savedir,grp,'CNDRSpaceFit_basemodel.pdf',sep=''),
        units = 'cm',height = 3.75,width = 3.75*length(tps))
 
+c.rng <- seq(params$c.min,params$c.max,length.out = params$c.n)
+p <- plot.Xt(Xt = t(Xt.sweep),t. = c.rng) + geom_vline(xintercept = c.Grp,color='grey50',linetype='dashed') +
+  annotate(geom='text',x=c.Grp,y=max(Xt.sweep),hjust=-0.25,label='Optimal',size=2,color='grey50')+
+  scale_color_manual(values = as.character(1:length(tps)),labels=paste(tps,'MPI'),name='') + 
+  xlab('c') + ylab('Pearson r with\nPathology') +ggtitle(paste0(grp,': ',paste0(injection.site,collapse = '-'))) +
+  theme_bw() + theme(text=element_text(size=8),plot.title = element_text(size=8,hjust=0.5),legend.key.size = unit(0.1,'cm'))
+p
+ggsave(p,filename = paste(savedir,grp,'CNDRSpaceCSweepByTimePoint_basemodel.pdf',sep=''),
+       units = 'cm',height = 4,width = 9)
+
 ###############################################
 ### Save predicted values and vulnerability ###
 ###############################################
