@@ -74,10 +74,15 @@ p.xyc <- function(x,y,ca,cmap='Set1',xlab,ylab,ttl='',col='black',alpha=1){
 }
 
 imagesc <- function(X,caxis_name='',cmap='plasma',caxis_labels=NULL,clim=c(min(X,na.rm=T),max(X,na.rm=T)),
-  xlabel='',ylabel='',yticklabels=rownames(X),xticklabels=as.character(colnames(X)),ttl='',noticks=FALSE){
+  xlabel='',ylabel='',yticklabels=rownames(X),xticklabels=as.character(colnames(X)),ttl='',noticks=FALSE,overlay = NULL,overlay.text.col='black'){
   # INPUTS:
   # X: matrix with dim names
-  #
+  # cmap: name of colormap, for R colorbrewer
+  # caxis_labels: tick labels for colorbar
+  # clim: color axis limits
+  # xlabel, ylabel, yticklabels, xticklabels, ttl: x axis labe, y axis label, y axis tick labels, x axis tick labels, plot title
+  # noticks: logical option to remove all ticks
+  # overlay: optional matrix of a text overlay (often p-value cut off labels or numbers), must be same size as X
   # OUTPUTS:
   # heatmap plot of X in style of matlab imagesc
 
@@ -89,6 +94,11 @@ imagesc <- function(X,caxis_name='',cmap='plasma',caxis_labels=NULL,clim=c(min(X
   }
   if(length(yticklabels) == 0){yticklabels <- rownames(X) <- as.character(1:nrow(X))}
   if(length(xticklabels) == 0){xticklabels <- colnames(X) <- as.character(1:ncol(X))}
+
+  if(!is.null(overlay)){
+    if(!identical(dim(overlay),dim(X))){print('ERROR: overlay values are different size than matrix'); return()}
+  }
+  
 
   X[X>max(clim)] <- max(clim) # threshold data based on color axis
   X[X < min(clim)] <- min(clim)
@@ -105,6 +115,11 @@ imagesc <- function(X,caxis_name='',cmap='plasma',caxis_labels=NULL,clim=c(min(X
     p <- p + scale_fill_gradientn(colours = c('#8B0000','#c23b22','#ffffff','#779ecb','#00008b'),
                            guide = "colorbar", limits=clim,
                            na.value = 'grey',name=caxis_name)
+  } else if(cmap == 'redblue_asymmetric'){
+    p <- p + scale_fill_gradientn(colours = c('#8B0000','#c23b22','#ffffff','#779ecb','#00008b'),
+                           values = scales::rescale(c(clim[1],0,clim[2])),
+                           guide = "colorbar", limits=clim,
+                           na.value = 'white',name=caxis_name)
   } else {
     pal.idx <- which(rownames(brewer.pal.info) == cmap)  
     cols <- brewer.pal(brewer.pal.info$maxcolors[pal.idx], cmap)
@@ -116,7 +131,11 @@ imagesc <- function(X,caxis_name='',cmap='plasma',caxis_labels=NULL,clim=c(min(X
   p <- p + xlab(xlabel)+ylab(ylabel)+ ggtitle(ttl)+
       theme(text=element_text(size=8),plot.title=element_text(hjust=0.5,size=8,face='bold'))
   if(noticks){p <- p + theme_void()}
-
+  if(!is.null(overlay)){
+    melt_ov_mat <- melt(t(overlay))
+    melt_ov_mat$Var1 <- as.character(melt_ov_mat$Var1)
+    p <- p + geom_text(data = melt_ov_mat, aes(x=Var1, y=Var2, label=value),size=2.5,color=overlay.text.col)
+  }
   return(p)
 
 }

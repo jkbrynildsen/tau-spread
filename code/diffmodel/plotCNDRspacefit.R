@@ -6,7 +6,7 @@ rm(list=setdiff(ls(),c('params','grp','goi','probe','injection.site')))
 print(grp)
 basedir <- params$basedir
 setwd(basedir)
-savedir <- paste(params$opdir,'diffmodel/',paste0(injection.site,collapse='-'),'/',sep='')
+savedir <- paste(params$opdir,'diffmodel/retrograde/',paste0(injection.site,collapse='-'),'/',sep='')
 dir.create(savedir,recursive=T)
 
 source('code/misc/fitfxns.R')

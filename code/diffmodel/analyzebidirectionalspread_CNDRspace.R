@@ -6,7 +6,7 @@ rm(list=setdiff(ls(),c('params','grp','injection.site')))
 print(grp)
 basedir <- params$basedir
 setwd(basedir)
-savedir <- paste(params$opdir,'diffmodel/bidirectional/',paste0(injection.site,collapse='-'),'/',sep='')
+savedir <- paste(params$opdir,'diffmodel/bidirectional/',paste0(injection.site,collapse='-'),'_independentfit/',sep='')
 dir.create(savedir,recursive=T)
 
 source('code/misc/fitfxns.R')
@@ -35,3 +35,4 @@ Xt.Grp.retro <- do.call('cbind',lapply(tps, function(t) log(quiet(map.ABA.to.CND
 Xt.Grp.antero <- do.call('cbind',lapply(tps, function(t) log(quiet(map.ABA.to.CNDR(predict.Lout(L.out.antero,Xo,c.Grp.antero,t,fxn=scipy.linalg$expm),path.names,ABA.to.CNDR.key)), base = 10))) # predict pathology using connectivity, time constant, and seed
 df <- lapply(1:length(tps), function(t) data.frame(path = log.path[[t]], pred.retro = Xt.Grp.retro[,t,drop=FALSE], pred.antero = Xt.Grp.antero[,t,drop=FALSE]))
 save(df,c.Grp.antero,c.Grp.retro,Xt.sweep.retro,Xt.sweep.antero,file = paste(savedir,grp,'CNDRSpaceBidirectionalFit_data.RData',sep=''))
+save(c.Grp.antero,c.Grp.retro,file = paste(savedir,grp,'CNDRSpaceIndependentBidirectionalFit_params.RData',sep=''))

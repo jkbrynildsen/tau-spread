@@ -45,7 +45,7 @@ fig.dir.j <- paste0(fig.dir.j,'Figure3') # prefix for figure direction/Figure
 grp <- 'NTG'
 desc <- c(grp,'(a) For retrograde model, average time constant is a good approximation of "real" time constant, 1 MPI not biasing significantly. vertical line is group average time constant.')
 write.table(x=desc,file = paste0(fig.dir.j,'.txt'),sep = '\n',row.names = F,col.names = F)
-init <- paste0(opdir,'diffmodel/',injection.site.label,'/',grp,'CNDRSpaceCSweepByTimePoint_basemodel.pdf')
+init <- paste0(opdir,'diffmodel/retrograde/',injection.site.label,'/',grp,'CNDRSpaceCSweepByTimePoint_basemodel.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'a.pdf'))
 
 # Figure 4. Null model of euclidean distance as network
@@ -99,3 +99,59 @@ init <- paste0(opdir,'nullmodels/seedspec_multi/',injection.site.label,'/',grp,'
 file.copy(from=init,to=paste0(fig.dir.j,'b.pdf'))
 init <- paste0(opdir,'nullmodels/seedspec_multi/',injection.site.label,'/',grp,'RandomSeedFitsVsConnectivity.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'c.pdf'))
+
+# train test
+fig.dir.j <- paste0(fig.dir,'Figure7','/') # make figure directory
+dir.create(fig.dir.j,recursive = T)
+fig.dir.j <- paste0(fig.dir.j,'Figure7') # prefix for figure direction/Figure
+grp <- 'NTG'
+desc <- c(grp,'(a) Distributions of model fit in held-out samples using time constants and regression coefficients estimated from an independent set of mice. Analysis reveals that time constants and regression coefficients generalize within the context of this experiment.',
+          '(b) Distributions of time constants reveals greater inter-sample variability in retrograde constants compared to anterograde. See Figure*bStats.txt for values. Implies that anterograde may be constant background, but retrograde may hold more importance for explaining individual differences in disease progression and possibly therapeutics as well')
+write.table(x=desc,file = paste0(fig.dir.j,'.txt'),sep = '\n',row.names = F,col.names = F)
+init <- paste0(opdir,'diffmodel/bidirectional_traintest/',injection.site.label,'/',grp,'TrainVsTestFits_CNDRSpace.pdf')
+file.copy(from=init,to=paste0(fig.dir.j,'a.pdf'))
+init <- paste0(opdir,'diffmodel/bidirectional_traintest/',injection.site.label,'/',grp,'TimeConstants_CNDRSpace.pdf')
+file.copy(from=init,to=paste0(fig.dir.j,'b.pdf'))
+init <- paste0(opdir,'diffmodel/bidirectional_traintest/',injection.site.label,'/',grp,'TimeConstantStats.txt')
+file.copy(from=init,to=paste0(fig.dir.j,'bStats.txt'))
+
+# figure 8. bootstrap bidirectional models and compare NTG and G20
+fig.dir.j <- paste0(fig.dir,'Figure8','/') # make figure directory
+dir.create(fig.dir.j,recursive = T)
+fig.dir.j <- paste0(fig.dir.j,'Figure8') # prefix for figure direction/Figure
+desc <- c('(a) Distributions of model fit (pearson r) for fitting data to bootstrap samples of mice. NTG and G20 do not differ in model fit (non-parametric, two-tailed test).',
+          '(b) Distributions of time constants reveals greater inter-sample variability in retrograde constants compared to anterograde. G20 and NTG do not differ wrt time constants. See Figure*bStats.txt for values. Implies that anterograde may be constant background, but retrograde may hold more importance for explaining individual differences in disease progression and possibly therapeutics as well',
+          '(c) Comparing anterograde and retrograde betas between NTG and G20. p-values are bonferroni corrected over all between-group comparisons. anterograde spread importance differs at 6 MPI.',
+          '(c, 2) see file Figure8cStats.csv for comparisons between antero and retro within NTG or G20. See critical p-value after bonferroni correction.',
+          '(d) non-parametric comparison of vulnerability values between NTG and G20 reveals significant differences in vulnerability between the groups.',
+          '(d, 2) see Figure8d_pvals.txt for definition of asterisks. p-vals are uncorrected b/c we need a ton of bootstraps to have numerical precision for the new p-crit after bonferroni correction.')
+
+write.table(x=desc,file = paste0(fig.dir.j,'.txt'),sep = '\n',row.names = F,col.names = F)
+init <- paste0(opdir,'diffmodel/bidirectional_bootstrap/',injection.site.label,'/NTGvsG20BootstrapPearson r_CNDRSpace.pdf')
+file.copy(from=init,to=paste0(fig.dir.j,'a.pdf'))
+init <- paste0(opdir,'diffmodel/bidirectional_bootstrap/',injection.site.label,'/NTGvsG20TimeConstants_CNDRSpace.pdf')
+file.copy(from=init,to=paste0(fig.dir.j,'b.pdf'))
+init <- paste0(opdir,'diffmodel/bidirectional_bootstrap/',injection.site.label,'/',grp,'TimeConstantStats.txt')
+file.copy(from=init,to=paste0(fig.dir.j,'bStats.txt'))
+init <- paste0(opdir,'diffmodel/bidirectional_bootstrap/',injection.site.label,'/NTGvsG20AnterogradeRetrogradeBetas_Boxplot_CNDRSpace.pdf')
+file.copy(from=init,to=paste0(fig.dir.j,'c.pdf'))
+init <- paste0(opdir,'diffmodel/bidirectional_bootstrap/',injection.site.label,'/NTGandG20_AnteroVsRetroBetas_Stats.csv')
+file.copy(from=init,to=paste0(fig.dir.j,'cStats.csv'))
+init <- paste0(opdir,'diffmodel/bidirectional_bootstrap/',injection.site.label,'/NTGvsG20BootstrapVulnerability_CNDRSpace.pdf')
+file.copy(from=init,to=paste0(fig.dir.j,'d.pdf'))
+init <- paste0(opdir,'diffmodel/bidirectional_bootstrap/',injection.site.label,'/NTGvsG20BootstrapVulnerability_CNDRSpace_pkey.txt')
+file.copy(from=init,to=paste0(fig.dir.j,'d_pvals.txt'))
+
+# Figure 9. degree-preserving null models
+fig.dir.j <- paste0(fig.dir,'Figure9','/') # make figure directory
+dir.create(fig.dir.j,recursive = T)
+fig.dir.j <- paste0(fig.dir.j,'Figure9') # prefix for figure direction/Figure
+grp <- 'NTG'
+desc <- c(grp,'(a-b) Fits obtained using retrograde spread along a rewired network that preserves in-degree (a) or out-degree (b).')
+
+write.table(x=desc,file = paste0(fig.dir.j,'.txt'),sep = '\n',row.names = F,col.names = F)
+init <- paste0(opdir,'nullmodels/rewire/',injection.site.label,'/NTGCNDRSpaceFit_InDegreePreserved.pdf')
+file.copy(from=init,to=paste0(fig.dir.j,'a.pdf'))
+init <- paste0(opdir,'nullmodels/rewire/',injection.site.label,'/NTGCNDRSpaceFit_OutDegreePreserved.pdf')
+file.copy(from=init,to=paste0(fig.dir.j,'b.pdf'))
+

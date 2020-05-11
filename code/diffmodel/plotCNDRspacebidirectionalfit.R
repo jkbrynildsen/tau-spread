@@ -13,7 +13,7 @@ source('code/misc/fitfxns.R')
 source('code/misc/miscfxns.R')
 source('code/misc/plottingfxns.R')
 load(paste(params$opdir,'processed/pathdata.RData',sep=''))  # load path data and ROI names
-load(paste(savedir,grp,'CNDRSpaceBidirectionalFit_data.RData',sep=''))
+load(paste(savedir,grp,'CNDRSpaceBidirectionalOptim_data.RData',sep=''))
 tps <- params$tps
 
 # exclude regions with 0 pathology at each time point for purposes of computing fit

@@ -35,15 +35,16 @@ inf.nan.mask <- function(x){
 	# x.masked: x with all rows (if matrix or df) or elements (if vector) containing Infs or NaNs removed
 	
 	if(is.vector(x)){
-		mask <- x %in% c(-Inf,Inf,NaN)# find infs or nans
+		mask <- x %in% c(-Inf,Inf,NaN,NA)# find infs or nans
 		x.masked <- x[!mask]
 	} else if(is.matrix(x) | is.data.frame(x)){
-		mask <- do.call('cbind',lapply(1:ncol(x),function(j) x[,j] %in% c(-Inf,Inf,NaN))) # find infs or nans
+		mask <- do.call('cbind',lapply(1:ncol(x),function(j) x[,j] %in% c(-Inf,Inf,NaN,NA))) # find infs or nans
 		x.masked <- x[rowSums(mask)==0,]
 	}
 	return(x.masked)
 	
 }
+
 source.save <- function(script,output){
 	# wrapper for source function that saves output and input of script
 	file.create(output)
@@ -86,7 +87,7 @@ collapse.columns <- function(df,cnames=colnames(df),groupby=NULL){
   # group: groups of observations in df for each variable in cnames
   
   df.names <- do.call('cbind',lapply(cnames, function(n) rep(n,nrow(as.matrix(df[,cnames])))))  
-  df.new <- data.frame(values = as.vector(as.matrix(df[,cnames])),names=as.vector(df.names))
+  df.new <- data.frame(values = as.vector(as.matrix(df[,cnames])),names=as.vector(df.names),stringsAsFactors=F)
   if(!is.null(groupby)){
     df.grp <- do.call('cbind',lapply(cnames,function(n) df[,groupby]))
     df.new$group <- as.vector(df.grp)
@@ -143,4 +144,26 @@ hemi.average <- function(df,r.v=FALSE){
 		if(r.v){return(rowMeans(cbind(df.i,df.c),na.rm=T))}
 	}
 	
+}
+
+pval.2tail.np <- function(test.val,dist){
+  # test.val: individual value being compared to distribution
+  # dist: vector,distribution of values under some null model, or otherwise
+  # sig.fig: number of significant figures
+  # compute 2-tailed p-value for test value occurring in distribution
+  dist <- as.numeric(dist)
+  pval.2tail <- 2*min(mean(test.val >= dist),mean(test.val <= dist))
+  return(pval.2tail)
+}
+
+getGroupColors <- function(grps=NULL){
+	# INPUTS:
+	# vector of group names
+	return(setNames(c('#007257','#f58a27'),grps))
+}
+
+list.posthoc.correct <- function(X,method){
+  # unlist a list, posthoc correct over all values according to "method"
+  # relist the list in the same structure and return
+  return(relist(flesh=p.adjust(unlist(X),method=method),skeleton=X))
 }

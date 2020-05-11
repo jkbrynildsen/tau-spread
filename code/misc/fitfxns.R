@@ -69,6 +69,21 @@ map.CNDR.to.ABA <- function(X.CNDR,ABA.names,CNDR.to.ABA.key){
   return(X.ABA)
 }
 
+bootstrap.path.tps <- function(Mice,nboot=1000){
+  # INPUTS:
+  # Mice: list of dataframes that is mice x regions whose values contain pathology
+  # nboot: number of bootstraps
+  #
+  # OUTPUTS:
+  # List with nboot elements, each of which contains as many elements as Mice. These sub elements contained bootstrapped
+  # log10 mean pathology for each element of Mice
+  
+  n.mice <- lapply(Mice,nrow)
+  X.boot <- lapply(1:nboot, function(n) # for nboot bootstraps, make a list of 3 single bootstraps for each time point
+    lapply(1:length(Mice), function(t) log(colMeans(Mice[[t]][sample(1:n.mice[[t]],replace=T),],na.rm = T),base=10)))
+  return(X.boot)
+}
+
 ###############################
 ### fitting diffusion model ###
 ###############################
@@ -233,56 +248,3 @@ c.ABAspace.fit <- function(log.path,L.out,Xo,c.rng,CNDR.to.ABA.key){
   return(c)
 }
 
-c.fit.r <- function(log.path,L.out,Xo,c.rng){
-  n.regions <- length(log.path)
-  # exclusion mask... don't count regions with 0 path
-  mask <- log.path != -Inf
-  # compute fit at each time point for range of time
-  Xt.sweep <- sapply(c.rng, function(c) # no time here, because in this project there's only 1 time pointo 
-    cor(log.path[mask],log(predict.Lout(L.out,Xo,c),base=10)[mask],use='pairwise.complete.obs'))
-  c <- c.rng[which.max(Xt.sweep)] # select c giving max correlation
-  r <- max(Xt.sweep)
-  print(c)
-  return(list(c=c,r=r,Xt.sweep=Xt.sweep)) # return time constant and correlation coefficient
-}
-
-c.fit.prior <- function(log.path,L.out,Xo,tp,c.rng){
-  # log.path: list of empirically measured path values for each node
-  # L.out: Laplacian matrix based on structural connectivity
-  # tp: vector of real values for time
-  # Xo: vector of initial state of pathology
-  # c.rng: values of time constant to test
-
-  n.regions <- length(log.path[[1]])
-  # exclusion mask... don't count regions with 0 path
-  mask <- lapply(log.path, function(x) x != -Inf)
-  # compute fit at each time point for range of time
-  Xt.sweep <- lapply(1:length(tp), function(t) # continuous time
-    sapply(c.rng, function(c)
-      cor(log.path[[t]][mask[[t]]],log(predict.Lout(L.out,Xo,c,t=t),base=10)[mask[[t]]])))
-  Xt.sweep <- Reduce('+',Xt.sweep) / length(tp) # mean fit for each tp
-  c <- c.rng[which.max(Xt.sweep)]
-  print(c)
-  return(c)
-}
-
-c.fit.prior.r <- function(log.path,L.out,Xo,tp,c.rng){
-  # log.path: list of empirically measured path values for each node
-  # L.out: Laplacian matrix based on structural connectivity
-  # tp: vector of real values for time
-  # Xo: vector of initial state of pathology
-  # c.rng: values of time constant to test
-
-  n.regions <- length(log.path[[1]])
-  # exclusion mask... don't count regions with 0 path
-  mask <- lapply(log.path, function(x) x != -Inf)
-  # compute fit at each time point for range of time
-  Xt.sweep <- lapply(1:length(tp), function(t) # continuous time
-    sapply(c.rng, function(c)
-      cor(log.path[[t]][mask[[t]]],log(predict.Lout(L.out,Xo,c,t=t),base=10)[mask[[t]]])))
-  r <- sapply(Xt.sweep, function(x) max(x)) # best fit for each time point
-  Xt.sweep <- Reduce('+',Xt.sweep) / length(tp) # mean fit for each tp
-  c <- c.rng[which.max(Xt.sweep)]
-  print(c)
-  return(list(c=c,r=r))
-}

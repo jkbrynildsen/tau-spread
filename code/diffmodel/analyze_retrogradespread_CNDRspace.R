@@ -6,7 +6,7 @@ rm(list=setdiff(ls(),c('params','grp','injection.site')))
 print(grp)
 basedir <- params$basedir
 setwd(basedir)
-savedir <- paste(params$opdir,'diffmodel/',paste0(injection.site,collapse='-'),'/',sep='')
+savedir <- paste(params$opdir,'diffmodel/retrograde/',paste0(injection.site,collapse='-'),'/',sep='')
 dir.create(savedir,recursive=T)
 
 source('code/misc/fitfxns.R')
@@ -19,7 +19,7 @@ Mice <- lapply(tps, function(tp) path.data[path.data$Condition == grp & path.dat
 Grp.mean <- lapply(Mice,function(X) colMeans(X,na.rm = T))
 
 W <- readMat(paste(params$opdir,'processed/W.mat',sep=''))$W
-L.out <- get.Lout(W,rep(1,n.regions.ABA)) # compute out-degreee Laplacian for connectivity only (not weighted by Snca)
+L.out <- get.Lout(W,rep(1,n.regions.ABA)) # compute out-degreee Laplacian for connectivity only
 
 # Fit time scaling parameter on average of all mice
 c.rng <- seq(params$c.min,params$c.max,length.out = params$c.n) # scaling parameter

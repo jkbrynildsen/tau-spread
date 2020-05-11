@@ -1,7 +1,8 @@
 rm(list=ls())
 basedir <- '~/Dropbox/Neurodegeneration/TauSpread/tau-spread/'
 setwd(basedir)
-params <- list(basedir=basedir,               
+params <- list(basedir=basedir,      
+               matlab.path='/Applications/MATLAB_R2019a.app/bin/matlab',
                grps = c('NTG','G20'),
                #injection.site=c('iDG','iVISam'), # define injection sites (using ABA nomenclature)
                injection.site = c('iDG', 'iCA1', 'iCA3', 'iVISam', 'iRSPagl'), # injection sites (using ABA nomenclature)
@@ -46,24 +47,22 @@ source('code/aba/atlas_structures.R') # required for most scripts in code/nullmo
 ### Diffusion model ###
 #######################
 
-# use each seed site separately, all together, and then do entire hippocampus
-injection.sites <- c(as.list(params$injection.site),list(params$injection.site),list(c('iDG','iCA1','iCA3')))
 # retrograde model with additive Mapt expression
-for(injection.site in injection.sites){
-  for(grp in params$grps){
-    #source('code/diffmodel/analyzespread_CNDRspace.R')
-    goi <- 'Mapt'
-    probe <- 'RP_071204_01_D02'
-    source('code/diffmodel/plotCNDRspacefit.R')
-  }
-}
+injection.site <- params$injection.site
+grp <- 'NTG'
+source('code/diffmodel/analyze_retrogradespread_CNDRspace.R')
+goi <- 'Mapt'
+probe <- 'RP_071204_01_D02'
+source('code/diffmodel/plotCNDRspacefit.R')
 
 # use each seed site separately, all together, and then do entire hippocampus
 injection.sites <- c(as.list(params$injection.site),list(params$injection.site),list(c('iDG','iCA1','iCA3')))
+injection.sites <- c(list(params$injection.site))
 # bidirectional, independent, additive diffusion model: anterograde and retrograde additive and independent
 for(injection.site in injection.sites){
   print(injection.site)
   for(grp in params$grps){
+    source('code/diffmodel/analyzebidirectionalspread_CNDRspace.R') # fit time constants independently to get initial parameters
     source('code/diffmodel/optim_bidirectionalspread_CNDRspace.R')
     goi <- 'Mapt'
     probe <- 'RP_071204_01_D02'
@@ -75,10 +74,29 @@ for(injection.site in injection.sites){
 ### Quality control analyses ###
 ################################
 
+# these are very time consuming
+
 for(grp in params$grps){
-  source('code/diffmodel/seedspec.R')
-  source('code/diffmodel/plotseedspec.R')
+  # seed specificity
+  #source('code/diffmodel/seedspec.R')
+  #source('code/diffmodel/plotseedspec.R')
+  
+  # validate time constant out of sample
+  #source('code/diffmodel/traintest_bidirectional_CNDRspace.R')
+  source('code/diffmodel/plot_traintest_bidirectional.R')
 }
+
+
+# bootstrap time constants and fits
+injection.sites <- list(params$injection.site)
+for(injection.site in injection.sites){
+  for(grp in params$grps){
+    source('code/diffmodel/bootstrap_optimspread_bidirectional.R')
+  }
+  grp <-'NTG'
+  source('code/diffmodel/bootstrap_independentspread_bidirectional.R')
+}
+
 
 ###########################
 ### Network null models ###
@@ -95,6 +113,16 @@ for(injection.site in injection.sites){
     source('code/nullmodels/plotCNDRspaceEuclideanfit.R')
   }
 }
+
+# run matlab scripts to generate distance matrix and rewired connectivity matrix
+mat.savedir <- paste(params$basedir,params$opdir,'processed',sep='')
+mat.cmd <- paste(params$matlab.path,' -nojvm -r \"cd(\'',params$basedir,'code/nullmodels/\'); homedir = \'',params$basedir,'\'; ',
+                 'savedir = \'', mat.savedir,'\'; run(\'makenullconn.m\'); exit;\"',sep='')
+system(mat.cmd)
+
+grp <- 'NTG'
+injection.site <- params$injection.site
+source('code/nullmodels/optimspread_rewire_CNDRspace.R')
 
 ############################
 ### G20 vs. NTG analyses ###
