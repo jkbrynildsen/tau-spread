@@ -14,6 +14,7 @@ source('code/misc/miscfxns.R')
 source('code/misc/plottingfxns.R')
 load(paste(params$opdir,'processed/pathdata.RData',sep=''))  # load path data and ROI names
 null.names <- c('InDegreePreserved','OutDegreePreserved')
+col <- getGroupColors(params$grps)[grp] # get color for plots
 
 for(null.name in null.names){
   
@@ -26,7 +27,7 @@ for(null.name in null.names){
 	# plot for each time point, using p.xy function 
 	p <- lapply(1:length(tps), function(t) 
   p.xy(x=m[[t]]$fitted.values,y=m[[t]]$model$path,ylab='Actual',xlab='Predicted',
-       ttl=paste0(grp,': ',tps[t],' MPI'),col='#007257',alpha=0.7))
+       ttl=paste0(grp,': ',tps[t],' MPI'),col=col,alpha=0.7))
 	p <- plot_grid(plotlist=p,align='hv',nrow=1)
 
 	ggsave(p,filename = paste(savedir,grp,'CNDRSpaceFit_',null.name,'.pdf',sep=''),

@@ -4,11 +4,11 @@ lm.mask.ant.ret <- function(y,Xt.retro,Xt.antero){
   # fit linear model: y = b0 + b.r*Xt.retro + b.a*Xt.antero + error
   # given Xt.antero and Xt.retro for a given set of time constants
   # return pearson r between y and y-hat (predicted vs actual path)
-  #
+  # 
   # INPUTS:
   # y: observed log pathology
   # Xt.retro: predicted pathology from retrograde model
-  # Xt.antero: predicted pathology from retrograde model
+  # Xt.antero: predicted pathology from anterograde model
   #
   # OUTPUTS:
   # compute pearson correlation between log predicted (computed) and log observed (input)
@@ -20,10 +20,42 @@ lm.mask.ant.ret <- function(y,Xt.retro,Xt.antero){
   df.m <- data.frame(y=y,x1=Xt.retro,x2=Xt.antero)
   df.m <- inf.nan.mask(df.m)
   m <- lm(y~x1+x2,data=df.m)
-  return(cor(m$fitted.values,df.m$y))
+  return(cor(m$fitted.values,df.m$y)) # optimize R^2... more intuitive for correlation
+  #return(mean(residuals(m)^2)) # return mean squared error to match with regression
 }
 
-c.CNDRspace.objective <- function(params.opt,log.path,tps,L.out.retro,L.out.antero,Xo,ABA.to.CNDR.key,fxn){
+lm.mask.ant.ret.all <- function(y,Xt.retro,Xt.antero){
+  # fit linear model: y = b0 + b.r*Xt.retro + b.a*Xt.antero + error
+  # given Xt.antero and Xt.retro for a given set of time constants and time points
+  # return pearson r between y and y-hat (predicted vs actual path)
+  # aggregates across all time points to fit one model
+  #
+  # INPUTS:
+  # y: list of observed log pathology from 3 time points
+  # Xt.retro: list of predicted pathology from retrograde model from 3 time points
+  # Xt.antero: list of predicted pathology from anterograde model from 3 time points
+  #
+  # OUTPUTS:
+  # compute pearson correlation between log predicted (computed) and log observed (input)
+  # excluding elements that were originally 0 and thus log(0) = -Inf
+  
+  Xt.retro <- log(Xt.retro,base=10)
+  Xt.antero <- log(Xt.antero,base=10)
+  df.m <- lapply(1:ncol(Xt.retro), function(t.) data.frame(y=y[[t.]],x1=Xt.retro[,t.],x2=Xt.antero[,t.]))
+  df.m <- lapply(df.m,inf.nan.mask)
+  for(t. in 1:length(df.m)){rownames(df.m[[t.]]) <- paste0(rownames(df.m[[t.]]),'_',t.)} # make unique rownames for each time point
+  df.m.rnames <- lapply(df.m,rownames)
+  m <- lm(y~x1+x2,data=do.call(rbind,df.m)) # fit model on all data
+  r <- residuals(m)
+  fv <- m$fitted.values
+  e <- mean(residuals(m)^2) # return overall MSE
+  #e <- cor(m$fitted.values,df$y) # return overall pearson r
+  e.tp <- sapply(df.m.rnames, function(rn) mean(r[rn]^2)) # return mean squared error for each time point
+  #e.tp <- sapply(df.m.rnames, function(rn) cor(fv[rn],df.m[rn,'y'])) # return pearson r for each time point
+  return(list(m=m,e=e,e.tp=e.tp,df=df.m)) 
+}
+
+c.CNDRspace.objective <- function(params.opt,log.path,tps,L.out.retro,L.out.antero,Xo,ABA.to.CNDR.key,fxn,one.lm){
   # fits time constant by modeling CNDR data
   # INPUTS:
   # OPTIMIZED:
@@ -42,7 +74,8 @@ c.CNDRspace.objective <- function(params.opt,log.path,tps,L.out.retro,L.out.ante
   # Xo: vector of initial pathology
   # ABA.to.CNDR.key: key to convert ABA to CNDR regions
   # fxn: matrix exponential function (fastest is scipy.linalg through reticulate)
-  
+  # one.lm: logical indicating whether to fit time-point specific slopes and intercepts or just fit a single slope and intercept
+  #
   # this function runs diffusion model in ABA space, 
   # but computes correlation with real data in CNDR annotation space to assess fit of time constant c
   # CNDR names are names of log.path, ABA names are names of Xo
@@ -65,7 +98,9 @@ c.CNDRspace.objective <- function(params.opt,log.path,tps,L.out.retro,L.out.ante
   Xt.retro <- quiet(map.ABA.to.CNDR(Xt.retro,names(log.path[[1]]),ABA.to.CNDR.key)) # convert matrix to CNDR space
   Xt.antero <- quiet(map.ABA.to.CNDR(Xt.antero,names(log.path[[1]]),ABA.to.CNDR.key)) # convert matrix to CNDR space
   #print(paste0('map: ',(proc.time()-ptm)['elapsed']))
-  Xt.sweep <- sapply(1:length(tps), function(t.) lm.mask.ant.ret(log.path[[t.]],Xt.retro[,t.],Xt.antero[,t.])) # this replaces the two lines below
+  if(!one.lm){
+    Xt.sweep <- sapply(1:length(tps), function(t.) lm.mask.ant.ret(log.path[[t.]],Xt.retro[,t.],Xt.antero[,t.])) # this replaces the two lines below
+  } else if(one.lm){list[m,Xt.sweep,e.tp,df] <- lm.mask.ant.ret.all(log.path,Xt.retro,Xt.antero)}
   
   print(mean(Xt.sweep)) # display value of fit/objective function
   return(mean(Xt.sweep)) # return mean across provided tps

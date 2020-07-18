@@ -2,11 +2,14 @@
 ### Load data ###
 #################
 
+grp <- 'NTG'
+injection.site <- params$injection.site
 rm(list=setdiff(ls(),c('params','grp','injection.site')))
 print(grp)
 basedir <- params$basedir
 setwd(basedir)
-savedir <- paste(params$opdir,'diffmodel/bidirectional_bootstrap/',paste0(injection.site,collapse='-'),'/',sep='')
+load.dir <- paste(params$opdir,'diffmodel/bidirectional_bootstrap/',paste0(injection.site,collapse='-'),'/',sep='')
+savedir <- paste0(params$opdir,'thesis_figs/')
 dir.create(savedir,recursive=T)
 
 source('code/misc/miscfxns.R')
@@ -19,12 +22,10 @@ tps <- params$tps
 ### load bootstrapping data ###
 ###############################
 
-load(file = paste(savedir,grp,'CNDRSpaceBidirectionalIndependent_Bootstrap.RData',sep=''))
-results.all <- results # make one list to hold both independent fitting and optim results
-load(file = paste(savedir,'NTGCNDRSpaceBidirectionalOptim_Bootstrap.RData',sep=''))
-results.all$BidirectionalOptim <- results
-# delete bidirectional independent for publication b/c it's the same as optim
-results.all <- results.all[-which(names(results.all)=='BidirectionalIndependent')] 
+load(file = paste(load.dir,grp,'CNDRSpaceBidirectionalIndependent_Bootstrap.RData',sep=''))
+results.all <- results[c('Retrograde','Anterograde')] # make one list to hold both independent fitting and optim results
+load(file = paste(load.dir,'NTGCNDRSpaceBidirectionalOptim_Bootstrap.RData',sep=''))
+results.all$Bidirectional <- results
 
 rm(results) # delete the individual results lists to avoid confusion
 mdl.names <- names(results.all)
@@ -45,7 +46,7 @@ df.plt <- do.call(rbind,fit.list)
 df.plt <- collapse.columns(df.plt,cnames = MPI.names,groupby='Model')
 last.tp.fits <- sapply(mdl.names, function(X) mean(df.plt$values[df.plt$names== rev(MPI.names)[1] & df.plt$group ==X]))
 mdl.order <- names(sort(last.tp.fits)) # order by their last month fits
-p <- ggplot(df.plt) + geom_boxplot(aes(x=group,y=values,fill=group),size=0.25,outlier.size=0.5,fatten=0.5,outlier.stroke = 0) + facet_wrap(~names) +
+p <- ggplot(df.plt[df.plt$names != '1 MPI',]) + geom_boxplot(aes(x=group,y=values,fill=group),size=0.25,outlier.size=0.5,fatten=0.5,outlier.stroke = 0) + facet_wrap(~names) +
   scale_x_discrete(limits=mdl.order)+ xlab('') + ylab('Pearson r') +
   scale_fill_manual(values=wes_palettes$Darjeeling1[1:length(mdl.names)],name='',guide=FALSE) + theme_classic()+
   theme(text=element_text(size=8), axis.text.x= element_text(angle=90,hjust=1,vjust=0.5))
@@ -73,10 +74,11 @@ for(MPI in MPI.names){
   #dimnames(p.vals.by.month[[MPI]]) <- list(unlist(unname(mdl.names.short)),unlist(unname(mdl.names.short)))
 }
 clim <- c(min(unlist(diff.by.month)),max(unlist(diff.by.month)))
-p.list <- lapply(MPI.names, function(MPI) imagesc(diff.by.month[[MPI]],overlay=p.vals.by.month[[MPI]],
-                   cmap='redblue_asymmetric',ttl=MPI,caxis_name = 'Row > Col.',clim = clim) +
-                   theme(legend.position = 'right',legend.key.width = unit(0.1,'cm'),legend.key.height = unit(0.4,'cm')) + coord_equal()+
+p.list <- lapply(MPI.names, function(MPI) imagesc(diff.by.month[[MPI]],overlay=p.vals.by.month[[MPI]],overlay.text.col = 'white',overlay.text.sz=6,
+                                                  cmap='redblue',ttl=MPI,caxis_name = 'Row > Col.  ',clim = clim,caxis_labels = c(clim[1],0,clim[2])) +
+                   #theme(legend.position = 'right',legend.key.width = unit(0.1,'cm'),legend.key.height = unit(0.4,'cm'),legend.title = element_text(size=8)) + coord_equal()+
+                   theme(legend.position = 'bottom',legend.key.height = unit(0.1,'cm'),legend.key.width = unit(0.4,'cm'),legend.title = element_text(size=8)) + coord_equal()+
                    theme(text=element_text(size=8),legend.box.margin = ggplot2::margin(0,0,0,0, unit='cm'),axis.text.x = element_text(angle=90,hjust=1,vjust=0.5)))
-p.all <- plot_grid(plotlist=p.list,nrow=2,ncol=2)
+p.all <- plot_grid(plotlist=p.list[3:4],nrow=1,ncol=2)
 ggsave(p.all,filename = paste(savedir,grp,'ModelComparisonBootstrapPearsonR_Matrix_CNDRSpace.pdf',sep=''),
-       units = 'cm',height = 14,width = 14,useDingbats=FALSE)
+       units = 'cm',height = 8.5,width = 16,useDingbats=FALSE)

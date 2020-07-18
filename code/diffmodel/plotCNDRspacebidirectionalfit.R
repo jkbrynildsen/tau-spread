@@ -15,6 +15,7 @@ source('code/misc/plottingfxns.R')
 load(paste(params$opdir,'processed/pathdata.RData',sep=''))  # load path data and ROI names
 load(paste(savedir,grp,'CNDRSpaceBidirectionalOptim_data.RData',sep=''))
 tps <- params$tps
+col <- getGroupColors(params$grps)[grp] # get color for plots
 
 # exclude regions with 0 pathology at each time point for purposes of computing fit
 lapply(1:length(tps), function(t) paste0(t,' MPI: ',sum(df[[t]]$path != -Inf & !is.na(df[[t]]$pred.retro)),'/',nrow(df[[t]]),' regions left'))
@@ -44,7 +45,7 @@ ggsave(p,filename = paste(savedir,grp,'CNDRSpaceFitAnteroRetroBetas_bidirectiona
 
 p <- lapply(1:length(tps), function(t) 
   p.xy(x=m[[t]]$fitted.values,y=m[[t]]$model$path,ylab='Actual',xlab='Predicted',
-       ttl=paste0(grp,': ',tps[t],' MPI'),col='#007257',alpha=0.7))
+       ttl=paste0(grp,': ',tps[t],' MPI'),col=col,alpha=0.7))
 p <- plot_grid(plotlist=p,align='hv',nrow=1)
 ggsave(p,filename = paste(savedir,grp,'CNDRSpaceFit_bidirectionaladditivemodel.pdf',sep=''),
        units = 'cm',height = 3.75,width = 3.75*length(tps),useDingbats=FALSE)
@@ -53,7 +54,7 @@ ggsave(p,filename = paste(savedir,grp,'CNDRSpaceFit_bidirectionaladditivemodel.p
 
 p <- lapply(1:length(tps), function(t) 
   p.xyc(x=m[[t]]$fitted.values,y=m[[t]]$model$path,ca=substr(names(m[[t]]$fitted.values),1,1),ylab='Actual',xlab='Predicted',
-       ttl=paste0(grp,': ',tps[t],' MPI'),col='#007257',alpha=0.7) + 
+       ttl=paste0(grp,': ',tps[t],' MPI'),col=col,alpha=0.7) + 
     theme(legend.position = c(0.1,1),legend.background=element_blank(),legend.key.size = unit(0.1, "cm"),legend.title = element_blank()))
 p <- plot_grid(plotlist=p,align='hv',nrow=1)
 ggsave(p,filename = paste(savedir,grp,'CNDRSpaceFitHemiColor_bidirectionaladditivemodel.pdf',sep=''),
@@ -69,7 +70,8 @@ for(t in 1:length(tps)){
 
 # compute intrinsic vulnerability as an average over time and hemispheres
 tp.excl <- '1 MPI' # exclude 1 MPI - see diffmodel/vuln_hemi_time.R
-write.csv(hemi.average(df.vuln[,-which(colnames(df.vuln)==tp.excl)]),paste0(savedir,grp,'vulnerability_bidirectional_hemiaverage_exclude',tp.excl,'.csv'))
+hemi.average.vuln <- hemi.average(df.vuln[,-which(colnames(df.vuln)==tp.excl)])
+write.csv(hemi.average.vuln,paste0(savedir,grp,'vulnerability_bidirectional_hemiaverage_exclude',tp.excl,'.csv'))
 
 write.csv(df.vuln,paste0(savedir,grp,'vulnerability_bidirectional.csv')) # save vulnerability for each time point
 
@@ -92,10 +94,17 @@ for(j in 1:length(df.gene)){df.gene[[j]] <- df.gene[[j]][,-1]}
 vuln.gene <- lapply(vulnerability, function(v) merge(as.data.frame(v),gene.exp,by=0))
 p <- lapply(1:length(tps), function(t)
   p.xy(x=vuln.gene[[t]][,paste0(goi,'_',probe)],y=vuln.gene[[t]]$v,ylab='Vulnerability',xlab=paste0(goi,' Expression'),
-       ttl=paste0(grp,': ',tps[t],' MPI'),col='#007257',alpha=0.7))
+       ttl=paste0(grp,': ',tps[t],' MPI'),col=col,alpha=0.7))
 p <- plot_grid(plotlist=p,align='hv',nrow=1)
 ggsave(p,filename = paste(savedir,grp,'CNDRSpaceVulnerability_bidirectionalmodel_vs',goi,probe,'.pdf',sep=''),
        units = 'cm',height = 3.75,width = 3.75*length(tps),useDingbats=FALSE)
+
+# look at hemisphere average vulnerability
+hemi.average(gene.exp)
+p <- p.xy(x=hemi.average(gene.exp)$v,y=hemi.average.vuln$v,ylab='Vulnerability',xlab=paste0(goi,' Expression'),
+       ttl=paste0(grp,': ',tps[t],' MPI'),col=col,alpha=0.7)
+ggsave(p,filename = paste(savedir,grp,'CNDRSpaceHemiAverageVulnerability_Exclude',tp.excl,'_bidirectionalmodel_vs',goi,probe,'.pdf',sep=''),
+       units = 'cm',height = 3.75,width = 3.75,useDingbats=FALSE)
 
 ##############################
 ### Include genes in model ###
@@ -107,7 +116,7 @@ pred <- lapply(m, function(m.i) m.i$fitted.values)
 
 p <- lapply(1:length(tps), function(t)
   p.xy(x=m[[t]]$fitted.values,y=m[[t]]$model$path,ylab='Actual',xlab='Predicted',
-       ttl=paste0(grp,': ',tps[t],' MPI'),col='#007257',alpha=0.7))
+       ttl=paste0(grp,': ',tps[t],' MPI'),col=col,alpha=0.7))
 p <- plot_grid(plotlist=p,align='hv',nrow=1)
 ggsave(p,filename = paste(savedir,grp,'CNDRSpaceFit_bidirectionalmodel+',goi,probe,'.pdf',sep=''),
        units = 'cm',height = 3.75,width = 3.75*length(tps),useDingbats=FALSE)

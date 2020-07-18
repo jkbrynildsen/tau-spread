@@ -21,7 +21,8 @@ dir.create(params$opdir,recursive = T)
 #################################################
 
 source('code/misc/packages.R')
-  
+# start up for many scripts
+injection.site <- params$injection.site; grp <- 'NTG'
 ##############################
 ### Process pathology data ###
 ##############################
@@ -55,14 +56,13 @@ goi <- 'Mapt'
 probe <- 'RP_071204_01_D02'
 source('code/diffmodel/plotCNDRspacefit.R')
 
-# use each seed site separately, all together, and then do entire hippocampus
-injection.sites <- c(as.list(params$injection.site),list(params$injection.site),list(c('iDG','iCA1','iCA3')))
+#injection.sites <- c(as.list(params$injection.site),list(params$injection.site),list(c('iDG','iCA1','iCA3'))) # use each seed site separately, all together, and then do entire hippocampus
 injection.sites <- c(list(params$injection.site))
 # bidirectional, independent, additive diffusion model: anterograde and retrograde additive and independent
 for(injection.site in injection.sites){
   print(injection.site)
   for(grp in params$grps){
-    source('code/diffmodel/analyzebidirectionalspread_CNDRspace.R') # fit time constants independently to get initial parameters
+    #source('code/diffmodel/analyzebidirectionalspread_CNDRspace.R') # fit time constants independently to get initial parameters
     source('code/diffmodel/optim_bidirectionalspread_CNDRspace.R')
     goi <- 'Mapt'
     probe <- 'RP_071204_01_D02'
@@ -97,13 +97,19 @@ for(injection.site in injection.sites){
   source('code/diffmodel/bootstrap_independentspread_bidirectional.R')
 }
 
+###############################
+### Genes and vulnerability ###
+###############################
+
+
 
 ###########################
 ### Network null models ###
 ###########################
 
 # use each seed site separately, all together, and then do entire hippocampus
-injection.sites <- c(as.list(params$injection.site),list(params$injection.site),list(c('iDG','iCA1','iCA3')))
+#injection.sites <- c(as.list(params$injection.site),list(params$injection.site),list(c('iDG','iCA1','iCA3')))
+injection.sites <- c(list(params$injection.site))
 # retrograde model with additive Mapt expression
 for(injection.site in injection.sites){
   for(grp in params$grps){
@@ -123,7 +129,7 @@ system(mat.cmd)
 grp <- 'NTG'
 injection.site <- params$injection.site
 source('code/nullmodels/optimspread_rewire_CNDRspace.R')
-
+source('code/nullmodels/plotCNDRspace_rewirefit.R')
 ############################
 ### G20 vs. NTG analyses ###
 ############################
@@ -148,5 +154,9 @@ for(injection.site in injection.sites){
 }
 
 # in silico injections with bidirectional model time constants and regression weights
-injection.sites <- c('iENTl', 'iSNc', 'iCP'); grp <- 'NTG'
+injection.sites <- c('iENTl', 'iSNc', 'iCP','iXII','iNTS'); grp <- 'NTG'
 for(injection.site in injection.sites){source('code/diffmodel/insilico_inject.R')}
+
+# in silico injections with bidirectional model that only has one set of weights and time constants
+injection.sites <- c('iENTl', 'iSNc', 'iCP','iXII','iNTS'); grp <- 'NTG'
+for(injection.site in injection.sites){source('code/diffmodel/insilico_inject_onelm.R')}

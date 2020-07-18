@@ -35,8 +35,8 @@ for(f.met in names(cfg)){
   G20.r <- as.data.frame(do.call(rbind,lapply(results.G20, function(R) R[[f.met]])))
   df.all <- rbind(cbind(NTG.r,Group='NTG',stringsAsFactors=F),cbind(G20.r,Group='G20',stringsAsFactors=F))
   colnames(df.all) <- c(MPI.names,'Group')
-  
   df.plt <- collapse.columns(df.all,cnames = MPI.names,groupby = 'Group')
+  df.plt$group <- factor(df.plt$group,levels = c(params$grps),ordered=T)
   p.lab <- sapply(1:ncol(NTG.r), function(tp) pval.2tail.np(0,NTG.r[,tp]-G20.r[,tp]))
   p.fit[[cfg[[f.met]]]] <- ggplot(df.plt) + geom_boxplot(aes(x=names,y=values,fill=group),size=0.25,outlier.size=0.25) + theme_classic() +
     annotate(geom='text',x=MPI.names,y=Inf,label=ifelse(p.lab<0.05,yes='*',no=''),vjust=1,size=2)+
@@ -60,6 +60,7 @@ for(grp in params$grps){
 }
 p.lab <- sapply(c('Anterograde','Retrograde'), function(d) pval.2tail.np(0,df.plt$values[df.plt$names==d & df.plt$group == 'NTG']-df.plt$values[df.plt$names==d & df.plt$group == 'G20']))
 p.lab <- paste0('p = ',signif(p.lab,2))
+df.plt$group <- factor(df.plt$group,levels = c(params$grps),ordered=T)
 p.c <- ggplot(df.plt) + geom_boxplot(aes(x=names,y=values,fill=group),size=0.25,outlier.size = 0.25) + theme_classic() +
   annotate(geom='text',x=c('Anterograde','Retrograde'),y=Inf,label=p.lab,vjust=1,size=2)+
   ylab('Diffusivity Constant') + xlab('') + scale_y_continuous(limits=c(0,NA))+scale_fill_manual(limits=params$grps,values =group.colors,name='')+
@@ -114,15 +115,14 @@ p.G20.v.NTG <- list.posthoc.correct(p.G20.v.NTG,'bonferroni') # bonferroni corre
 p.G20.v.NTG.lab <- as.data.frame(sapply(as.data.frame(p.G20.v.NTG),function(x) paste('p =',signif(x,2))))
 p.G20.v.NTG.lab$group <- c('Anterograde','Retrograde')
 df.p <- collapse.columns(p.G20.v.NTG.lab,cnames=MPI.names,groupby='group')
-
+df.plt$Group <- factor(df.plt$Group,levels = params$grps,ordered=T)
 p <- ggplot() + geom_boxplot(data=df.plt,aes(x=names,y=values,fill=Group),size=0.25,outlier.size=0.25) + 
   theme_classic() + facet_wrap(~group)+
-  geom_text(data=df.p,aes(x=names,label=values,y=Inf),vjust=1,size=2)+
+  geom_text(data=df.p,aes(x=names,label=values,y=Inf),vjust=1,size=1.8)+
   ylab('Standardized Beta') + xlab('') +scale_fill_manual(limits=params$grps,values =group.colors,name='')+
   theme(text=element_text(size=8),legend.key.size = unit(0.1,'cm'),legend.box.margin = ggplot2::margin(t = 0, unit='cm'),axis.text.x = element_text(angle=90,hjust=1,vjust=0.5)) 
 ggsave(p,filename = paste(savedir,'NTGvsG20AnterogradeRetrogradeBetas_Boxplot_CNDRSpace.pdf',sep=''),
        units = 'cm',height = 6,width = 9,useDingbats=FALSE)
-
 
 # 4. bootstrap NTG vulnerability values
 

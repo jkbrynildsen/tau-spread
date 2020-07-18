@@ -15,7 +15,7 @@ plot.Xt <- function(Xt,t.){
 
 }
 
-p.xy <- function(x,y,xlab,ylab,ttl='',col='black',alpha=1,sm.method = 'lm',formula=NULL){
+p.xy <- function(x,y,xlab,ylab,ttl='',col='black',alpha=1,sm.method = 'lm',formula=NULL,p.force=NULL,r.method='pearson'){
   # INPUTS:
   # x: x variable, vector
   # y: y variable, vector
@@ -24,15 +24,18 @@ p.xy <- function(x,y,xlab,ylab,ttl='',col='black',alpha=1,sm.method = 'lm',formu
   # alpha: opacity of points
   # sm.method: method for geom_smooth to draw line of best fit
   # formula: if using gam or nonlinear fit, provide formula
+  # p.force: force p-value if you want to multiple comparisons correct outside of function
+  # r.method: correlation method
   #
   # OUTPUTS:
-  # scatter plot with r and p value for pearson correlation between x and y
+  # scatter plot with r and p value for specified type of correlation between x and y
   # and linear fit
 
   df <- data.frame(x=x,y=y)
   df <- inf.nan.mask(df)
-  c.test <- cor.test(df$x,df$y)
-  r.text <- paste0('r = ',signif(c.test$estimate,2),'\np = ',signif(c.test$p.value,2)) # annotation
+  c.test <- cor.test(df$x,df$y,method = r.method)
+  if(is.null(p.force)){p <- c.test$p.value}
+  r.text <- paste0('r = ',signif(c.test$estimate,2),'\np = ',signif(p,2)) # annotation
 
   p <- ggplot(df) + geom_point(aes(x=x,y=y),color=col,stroke=0,alpha=alpha) + 
   geom_smooth(aes(x=x,y=y),fill=col,color=col,method=sm.method,formula=formula) + 
@@ -73,8 +76,49 @@ p.xyc <- function(x,y,ca,cmap='Set1',xlab,ylab,ttl='',col='black',alpha=1){
   return(p)
 }
 
+p.xy.flex <- function(x,y,xlab,ylab,ttl='',col='black',alpha=1,r.method='pearson',sm.method = 'lm',formula=NULL,
+                      p=NULL,r=NULL,ptxt='p = ',rtxt='r = ',parse=F,pt.sz=1,ln.sz=1,pos = 'bottom.right'){
+  # INPUTS:
+  # x: x variable, vector
+  # y: y variable, vector
+  # xlab, ylab, ttl: character labels for axes
+  # col: point color and line color, RGB hex code or R native color or RGB value
+  # alpha: opacity of points
+  # sm.method: method for geom_smooth to draw line of best fit
+  # formula: if using gam or nonlinear fit, provide formula\
+  # p,r: p-value or stat/coefficient to display, for instance, if you post-hoc correct outside the function
+  # ptxt,rtxt: what to say for p=, i.e. p[FDR]== or just p=
+  # parse: logical specifying whether to parse text for annotations. if parsing should use 'p ==' instead of 'p = '
+  # pos: (top/bottom).(right/left) character i.e. 'top.right' or 'bottom.left' specifying location of label
+  #
+  # OUTPUTS:
+  # scatter plot with r and p value for pearson correlation between x and y
+  # and linear fit
+  
+  df <- data.frame(x=x,y=y)
+  c.test <- cor.test(df$x,df$y,method=r.method,use='pairwise.complete.obs')
+  if(is.null(p)){p <- c.test$p.value}
+  if(is.null(r)){r <- c.test$estimate}
+  r.text <- paste0(rtxt,signif(r,2))
+  p.text <- paste0(ptxt,signif(p,2)) # annotation
+  pos <- strsplit(pos,'[.]')[[1]] # get vertical (v) and horizontal (h) position
+  v <- pos[1]; h <- pos[2] 
+  if(v == 'top'){v <- 1;scl.r<-1;scl.p<-2}else{v <- -1;scl.r<-2;scl.p<-1}
+  if(h == 'right'){h <- 1}else{h <- -1}
+  
+  p <- ggplot(df) + geom_point(aes(x=x,y=y),color=col,stroke=0,alpha=alpha,size=pt.sz) + 
+    geom_smooth(aes(x=x,y=y),fill=col,color=col,method=sm.method,formula=formula,size=ln.sz) + 
+    xlab(xlab) + ylab(ylab) + ggtitle(ttl) + 
+    annotate("text",size = 2, x = h*Inf,y =v*Inf, label = r.text,hjust=1*h,vjust=scl.r*v,parse=parse) +
+    annotate("text",size = 2, x = h*Inf,y =v*Inf, label = p.text,hjust=1*h,vjust=scl.p*v,parse=parse) +
+    theme_classic() + theme(text = element_text(size = 8)) + 
+    theme(plot.title = element_text(size=8,hjust=0.5,face = "bold")) +
+    theme(plot.margin=grid::unit(c(0,0,0,0), "mm")) + theme(legend.position = 'none')
+  return(p)
+}
+
 imagesc <- function(X,caxis_name='',cmap='plasma',caxis_labels=NULL,clim=c(min(X,na.rm=T),max(X,na.rm=T)),
-  xlabel='',ylabel='',yticklabels=rownames(X),xticklabels=as.character(colnames(X)),ttl='',noticks=FALSE,overlay = NULL,overlay.text.col='black'){
+  xlabel='',ylabel='',yticklabels=rownames(X),xticklabels=as.character(colnames(X)),ttl='',noticks=FALSE,overlay = NULL,overlay.text.col='black',overlay.text.sz=2.5){
   # INPUTS:
   # X: matrix with dim names
   # cmap: name of colormap, for R colorbrewer
@@ -90,6 +134,8 @@ imagesc <- function(X,caxis_name='',cmap='plasma',caxis_labels=NULL,clim=c(min(X
     caxis_breaks<-labeling::extended(clim[1], clim[2], m = 5)
     caxis_labels<-as.character(labeling::extended(clim[1], clim[2], m = 5))
   } else if(is.character(caxis_labels)){ # if axis is discrete then autogenerate breaks and label with provided labels
+    caxis_breaks<-labeling::extended(clim[1], clim[2], m = length(caxis_labels))
+  } else if(is.numeric(caxis_labels)){
     caxis_breaks<-labeling::extended(clim[1], clim[2], m = length(caxis_labels))
   }
   if(length(yticklabels) == 0){yticklabels <- rownames(X) <- as.character(1:nrow(X))}
@@ -113,12 +159,12 @@ imagesc <- function(X,caxis_name='',cmap='plasma',caxis_labels=NULL,clim=c(min(X
     p <- p + scale_fill_viridis(option = 'plasma',name=caxis_name,limits=clim,breaks=caxis_breaks,labels=caxis_labels)
   } else if(cmap == 'redblue'){
     p <- p + scale_fill_gradientn(colours = c('#8B0000','#c23b22','#ffffff','#779ecb','#00008b'),
-                           guide = "colorbar", limits=clim,
+                           guide = "colorbar", limits=clim,breaks=caxis_breaks,
                            na.value = 'grey',name=caxis_name)
   } else if(cmap == 'redblue_asymmetric'){
     p <- p + scale_fill_gradientn(colours = c('#8B0000','#c23b22','#ffffff','#779ecb','#00008b'),
                            values = scales::rescale(c(clim[1],0,clim[2])),
-                           guide = "colorbar", limits=clim,
+                           guide = "colorbar", limits=clim,breaks=caxis_breaks,
                            na.value = 'white',name=caxis_name)
   } else {
     pal.idx <- which(rownames(brewer.pal.info) == cmap)  
@@ -134,7 +180,7 @@ imagesc <- function(X,caxis_name='',cmap='plasma',caxis_labels=NULL,clim=c(min(X
   if(!is.null(overlay)){
     melt_ov_mat <- melt(t(overlay))
     melt_ov_mat$Var1 <- as.character(melt_ov_mat$Var1)
-    p <- p + geom_text(data = melt_ov_mat, aes(x=Var1, y=Var2, label=value),size=2.5,color=overlay.text.col)
+    p <- p + geom_text(data = melt_ov_mat, aes(x=Var1, y=Var2, label=value),size=overlay.text.sz,color=overlay.text.col)
   }
   return(p)
 

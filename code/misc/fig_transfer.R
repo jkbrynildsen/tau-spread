@@ -18,10 +18,12 @@ for(f.def in f.defs){
   fig.dir.j <- paste0(fig.dir,f,'/') # make figure directory
   dir.create(fig.dir.j,recursive = T)
   fig.dir.j <- paste0(fig.dir.j,f) # prefix for figure direction/Figure
-  desc <- c(grp,'(a) A combination of retrograde and anterograde diffusion models explains pathology spread.',
+  desc <- c('script: code/diffmodel/plotCNDRspacebidirectionalfit.R',
+            grp,'(a) A combination of retrograde and anterograde diffusion models explains pathology spread.',
             '(b) The same as (a), coloring each point by hemisphere relative to injection site.',
             '(c) Independent contributions of anterograde and retrograde spread over time, measured by standardized regression betas. Variance Inflation Factor reveals multicollinearity is not an issue',
-            '(d) Vulnerability/residuals from (a) vs MAPT expression.')
+            '(d) Vulnerability/residuals from (a) vs MAPT expression.',
+            '(e) hemisphere and time (excluding 1 MPI) averaged vulnerability vs hemisphere averaged Mapt expression')
   write.table(x=desc,file = paste0(fig.dir.j,'.txt'),sep = '\n',row.names = F,col.names = F)
   init <- paste0(opdir,'diffmodel/bidirectional/',injection.site.label,'/',grp,'CNDRSpaceFit_bidirectionaladditivemodel.pdf')
   file.copy(from=init,to=paste0(fig.dir.j,'a.pdf'))
@@ -31,6 +33,8 @@ for(f.def in f.defs){
   file.copy(from=init,to=paste0(fig.dir.j,'c.pdf'))
   init <- paste0(opdir,'diffmodel/bidirectional/',injection.site.label,'/',grp,'CNDRSpaceVulnerability_bidirectionalmodel_vsMaptRP_071204_01_D02.pdf')
   file.copy(from=init,to=paste0(fig.dir.j,'d.pdf'))
+  init <- paste0(opdir,'diffmodel/bidirectional/',injection.site.label,'/',grp,'CNDRSpaceHemiAverageVulnerability_Exclude1 MPI_bidirectionalmodel_vsMaptRP_071204_01_D02.pdf')
+  file.copy(from=init,to=paste0(fig.dir.j,'e.pdf'))
   init <- paste0(opdir,'diffmodel/bidirectional/',injection.site.label,'/',grp,'vulnerability_bidirectional_hemiaverage_exclude1 MPI.csv')
   file.copy(from=init,to=paste0(fig.dir.j,'a_hemiaveragevulnerabilityexclude1MPI.csv'))
   init <- paste0(opdir,'diffmodel/bidirectional/',injection.site.label,'/',grp,'log10predictedpath_bidirectional.csv')
@@ -150,8 +154,22 @@ grp <- 'NTG'
 desc <- c(grp,'(a-b) Fits obtained using retrograde spread along a rewired network that preserves in-degree (a) or out-degree (b).')
 
 write.table(x=desc,file = paste0(fig.dir.j,'.txt'),sep = '\n',row.names = F,col.names = F)
-init <- paste0(opdir,'nullmodels/rewire/',injection.site.label,'/NTGCNDRSpaceFit_InDegreePreserved.pdf')
+init <- paste0(opdir,'nullmodels/rewire/',injection.site.label,'/',grp,'CNDRSpaceFit_InDegreePreserved.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'a.pdf'))
-init <- paste0(opdir,'nullmodels/rewire/',injection.site.label,'/NTGCNDRSpaceFit_OutDegreePreserved.pdf')
+init <- paste0(opdir,'nullmodels/rewire/',injection.site.label,'/',grp,'CNDRSpaceFit_OutDegreePreserved.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'b.pdf'))
 
+# Figure 10. comparing retrograde and anterograde through bootstrapping
+fig.dir.j <- paste0(fig.dir,'Figure10','/') # make figure directory
+dir.create(fig.dir.j,recursive = T)
+fig.dir.j <- paste0(fig.dir.j,'Figure10') # prefix for figure direction/Figure
+grp <- 'NTG'
+desc <- c(grp,'(a) Bootstrapped distributions of model fit using retrograde, anterograde, euclidean, and bidirectional models.',
+          '(b) Matrix of fit differences (y-axis minus x-axis) Pairwise one-tailed non-parametric tests computing a p-value for the null hypothesis that \"model on the y-axis fits worse than model on x-axis\"',
+          'you can see that all connectivity models beat euclidean distance, then bidirectional > retro > antero.')
+
+write.table(x=desc,file = paste0(fig.dir.j,'.txt'),sep = '\n',row.names = F,col.names = F)
+init <- paste0(opdir,'diffmodel/bidirectional_bootstrap/',injection.site.label,'/',grp,'ModelComparisonBootstrapPearsonR_CNDRSpace.pdf')
+file.copy(from=init,to=paste0(fig.dir.j,'a.pdf'))
+init <- paste0(opdir,'diffmodel/bidirectional_bootstrap/',injection.site.label,'/',grp,'ModelComparisonBootstrapPearsonR_Matrix_CNDRSpace.pdf')
+file.copy(from=init,to=paste0(fig.dir.j,'b.pdf'))

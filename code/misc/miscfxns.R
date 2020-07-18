@@ -159,11 +159,16 @@ pval.2tail.np <- function(test.val,dist){
 getGroupColors <- function(grps=NULL){
 	# INPUTS:
 	# vector of group names
-	return(setNames(c('#007257','#f58a27'),grps))
+	return(setNames(c('#047391','#FF7F00'),grps))
 }
 
 list.posthoc.correct <- function(X,method){
   # unlist a list, posthoc correct over all values according to "method"
   # relist the list in the same structure and return
   return(relist(flesh=p.adjust(unlist(X),method=method),skeleton=X))
+}
+
+outlier.mask <- function(x){
+  # return mask of values in x that are outliers
+  return(x %in% boxplot.stats(x)$out)
 }
