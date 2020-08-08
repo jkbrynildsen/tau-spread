@@ -41,17 +41,19 @@ lm.mask.ant.ret.all <- function(y,Xt.retro,Xt.antero){
   
   Xt.retro <- log(Xt.retro,base=10)
   Xt.antero <- log(Xt.antero,base=10)
+  # dataframe subsetted by time point
   df.m <- lapply(1:ncol(Xt.retro), function(t.) data.frame(y=y[[t.]],x1=Xt.retro[,t.],x2=Xt.antero[,t.]))
   df.m <- lapply(df.m,inf.nan.mask)
   for(t. in 1:length(df.m)){rownames(df.m[[t.]]) <- paste0(rownames(df.m[[t.]]),'_',t.)} # make unique rownames for each time point
   df.m.rnames <- lapply(df.m,rownames)
-  m <- lm(y~x1+x2,data=do.call(rbind,df.m)) # fit model on all data
+  df.fit <- do.call(rbind,df.m) # dataframe that is actually used to fit model
+  m <- lm(y~x1+x2,data=df.fit) # fit model on all data
   r <- residuals(m)
   fv <- m$fitted.values
-  e <- mean(residuals(m)^2) # return overall MSE
-  #e <- cor(m$fitted.values,df$y) # return overall pearson r
-  e.tp <- sapply(df.m.rnames, function(rn) mean(r[rn]^2)) # return mean squared error for each time point
-  #e.tp <- sapply(df.m.rnames, function(rn) cor(fv[rn],df.m[rn,'y'])) # return pearson r for each time point
+  #e <- mean(residuals(m)^2) # return overall MSE
+  e <- cor(fv,df.fit$y) # return overall pearson r
+  #e.tp <- sapply(df.m.rnames, function(rn) mean(r[rn]^2)) # return mean squared error for each time point
+  e.tp <- sapply(df.m.rnames, function(rn) cor(fv[rn],df.fit[rn,'y'])) # return pearson r for each time point
   return(list(m=m,e=e,e.tp=e.tp,df=df.m)) 
 }
 

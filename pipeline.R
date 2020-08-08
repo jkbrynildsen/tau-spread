@@ -70,6 +70,15 @@ for(injection.site in injection.sites){
   }
 }
 
+# bidirectional diffusion model with different a single linear model weighting anterograde and retrograde
+injection.sites <- c(list(params$injection.site))
+grp <- 'NTG'
+for(injection.site in injection.sites){
+  source('code/diffmodel/optim_bidirectionalspread_onelm_CNDRspace.R')
+  goi <- 'Mapt'
+  probe <- 'RP_071204_01_D02'
+  source('code/diffmodel/plotCNDRspacebidirectionalonelmfit.R')
+}
 ################################
 ### Quality control analyses ###
 ################################
@@ -86,15 +95,14 @@ for(grp in params$grps){
   source('code/diffmodel/plot_traintest_bidirectional.R')
 }
 
-
 # bootstrap time constants and fits
 injection.sites <- list(params$injection.site)
 for(injection.site in injection.sites){
   for(grp in params$grps){
-    source('code/diffmodel/bootstrap_optimspread_bidirectional.R')
+    source('code/modelcomparison/bootstrap_optimspread_bidirectional.R')
   }
   grp <-'NTG'
-  source('code/diffmodel/bootstrap_independentspread_bidirectional.R')
+  #source('code/modelcomparison/modelcomparison_traintest.R')
 }
 
 ###############################
