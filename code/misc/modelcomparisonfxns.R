@@ -155,6 +155,7 @@ spread.model.eval <- function(m.out,X.test,save.resid=FALSE){
   results <- c(results,list(m.train.coefs=summary(lm.beta(m.train))$coef,fits.r=fits.r,fits.mse=fits.mse))
   
   if(save.resid){ # save model residuals with respect to input data?
+    # see code/diffmodel/plotCNDRspacebidirectionalonelmfit.R for how to do this with one lm model
     resid <- sapply(m.train, function(m.i) residuals(m.i)) # get residuals of each model
     df.resid <- df.resid.init
     for(tp in 1:length(tps)){df.resid[names(resid[[tp]]),paste(tps[tp],'MPI')] <- resid[[tp]]}

@@ -71,13 +71,14 @@ for(injection.site in injection.sites){
 }
 
 # bidirectional diffusion model with different a single linear model weighting anterograde and retrograde
-injection.sites <- c(list(params$injection.site))
-grp <- 'NTG'
-for(injection.site in injection.sites){
-  source('code/diffmodel/optim_bidirectionalspread_onelm_CNDRspace.R')
-  goi <- 'Mapt'
-  probe <- 'RP_071204_01_D02'
-  source('code/diffmodel/plotCNDRspacebidirectionalonelmfit.R')
+# Manuscript: Figure 4A (NTG) model fit by month, 5B (NTG) residuals vs. MAPT exp
+for(grp in params$grps){
+  injection.sites <- c(list(params$injection.site))
+  for(injection.site in injection.sites){
+    source('code/diffmodel/optim_bidirectionalspread_onelm_CNDRspace.R')
+    goi <- 'Mapt'
+    source('code/diffmodel/plotCNDRspacebidirectionalonelmfit.R')
+  }
 }
 ################################
 ### Quality control analyses ###
@@ -109,7 +110,8 @@ for(injection.site in injection.sites){
 ### Genes and vulnerability ###
 ###############################
 
-
+injection.site <- params$injection.site; grp <- 'NTG'
+source('code/genes_vulnerability/genes_vulnerability_bidirectional.R')
 
 ###########################
 ### Network null models ###
@@ -136,8 +138,8 @@ system(mat.cmd)
 
 grp <- 'NTG'
 injection.site <- params$injection.site
-source('code/nullmodels/optimspread_rewire_CNDRspace.R')
-source('code/nullmodels/plotCNDRspace_rewirefit.R')
+source('code/nullmodels/optimspread_rewire_onelm_CNDRspace.R')
+source('code/nullmodels/plotCNDRspace_rewirefit_onelm.R')
 ############################
 ### G20 vs. NTG analyses ###
 ############################

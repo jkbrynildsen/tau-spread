@@ -7,7 +7,7 @@
 rm(list=setdiff(ls(),c('params','grp','goi','probe','injection.site')))
 basedir <- params$basedir
 setwd(basedir)
-diffmodel.savedir <- paste(params$opdir,'diffmodel/',paste0(injection.site,collapse='-'),'/',sep='')
+diffmodel.savedir <- paste(params$opdir,'diffmodel/bidirectional_onelm/',paste0(injection.site,collapse='-'),'/',sep='')
 savedir <- paste(params$opdir,'diffmodel/vuln_time_hemi/',paste0(injection.site,collapse='-'),'/',sep='')
 dir.create(savedir,recursive=T)
 
@@ -28,15 +28,15 @@ Grp.mean <- lapply(Mice,function(X) colMeans(X,na.rm = T))
 ### load vulnerability for group ###
 ####################################
 
-vuln <- read.csv(file=paste0(diffmodel.savedir,grp,'vulnerability.csv'),check.names = F,row.names = 1)
-vuln.hemi <- read.csv(file=paste0(diffmodel.savedir,grp,'vulnerability_hemiaverage.csv'),row.names = 1)
+vuln <- read.csv(file=paste0(diffmodel.savedir,grp,'vulnerability_bidirectional.csv'),check.names = F,row.names = 1)
+vuln.hemi <- hemi.average(vuln)
 colnames(vuln.hemi) <- 'Time-Hemi Average'
 
 #################################################
 ### compare vulnerability over time and hemis ###
 #################################################
 
-vuln <- vuln[,-which(colnames(vuln) == 'Average')] # remove average vulnerability column
+vuln <- vuln[,which(colnames(vuln) != 'Average')] # remove average vulnerability column
 list[vuln.i,vuln.c] <- hemi.split(vuln,rename=TRUE) # split vulnerability into two dataframes
 
 colnames(vuln.i) <- paste(colnames(vuln.i),'ipsi')

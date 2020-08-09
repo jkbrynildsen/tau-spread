@@ -11,7 +11,7 @@
 
 # results files
 *TauDiffusion*Cmax*
-figures
+figures*
 
 # generated data files
 *.csv

@@ -84,12 +84,10 @@ for(grp in params$grps){
   colnames(df.plt) <- c('Beta','OI')
   df.plt <- collapse.columns(df.plt,cnames = 'Beta',groupby = 'OI')
   df.plt$Group <- grp
-  p.avr <- sapply(MPI.names, function(M) pval.2tail.np(0,df.plt$values[df.plt$names==M & df.plt$group=='Anterograde'] - df.plt$values[df.plt$names==M & df.plt$group=='Retrograde']))
+  p.avr <- pval.2tail.np(0,df.plt$values[df.plt$group=='Anterograde'] - df.plt$values[df.plt$group=='Retrograde'])
   p.avr <- p.avr
-  p.lab.avr <- sapply(p.avr, function(P) paste0('p = ',signif(P,2)))
+  p.lab.avr <- paste0('p = ',signif(p.avr,2))
   p.lab.avr[p.avr ==0] <- paste0('p < ',signif(1/length(cfg[[grp]]),2)) # don't say p = 0, say < 1/nboots
-  # prep data for making line plots with error bars -- i hate this so much and i don't think i'll use it but leaving here for now
-  line.row.names <- as.vector(sapply(MPI.names, function(m) sapply(c('Anterograde','Retrograde'),function(d) paste0(m,d))))
   cfg[[grp]] <- list(df=df.plt,p.avr=p.lab.avr,grp=grp) # store plot ready df in looped list
 }
 
@@ -111,6 +109,7 @@ p <- ggplot() + geom_boxplot(data=df.plt,aes(x=group,y=values,fill=Group),size=0
   theme(text=element_text(size=8),legend.key.size = unit(0.1,'cm'),legend.box.margin = ggplot2::margin(t = 0, unit='cm'),axis.text.x = element_text(angle=90,hjust=1,vjust=0.5)) 
 ggsave(p,filename = paste(savedir,'NTGvsG20AnterogradeRetrogradeBetas_Boxplot_CNDRSpace.pdf',sep=''),
        units = 'cm',height = 6,width = 9,useDingbats=FALSE)
+write.csv(x=p.G20.v.NTG.lab,file=paste0(savedir,'NTGvsG20_AnteroAndRetroBetas_Stats.csv'),row.names = F)
 
 # 4. bootstrap NTG vulnerability values -- not done
 

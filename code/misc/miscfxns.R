@@ -123,6 +123,21 @@ hemi.split <- function(df,rename = FALSE){
 	}
 	return(list(df.i=df.i,df.c=df.c))
 }
+
+hemi.expand.names <- function(df){
+	# INPUTS:
+	# df: data frame whose rownames are region names WITHOUT 'i' or 'c' as first character
+	# 
+	# OUTPUTS:
+	# df.cat: input df, duplicated and vertically concatenated so it has a row corresponding to 'i' and 'c' for every region
+	# useful utility in manipulating gene data (hemispherically symmetric) and vulnerability/path data (asymmetric)
+
+	df.names <- rownames(df)
+	df.cat <- rbind(df,df)
+	rownames(df.cat) <- c(paste0('i',df.names),paste0('c',df.names))
+	return(df.cat)
+
+}
 hemi.average <- function(df,r.v=FALSE){
 	# INPUTS:
 	# df: data frame whose row names are ABA regions with 'i' or 'c' as first character
@@ -146,6 +161,18 @@ hemi.average <- function(df,r.v=FALSE){
 	
 }
 
+pval.np.pub <- function(p,n){
+	# INPUTS:
+	# p: matrix or vector of p values from non-parametric test
+	# n: number of permutations from test
+	#
+	# OUTPUTS:
+	# p.new: matrix or vector of p values with p = 0 reworded to p < 1/n
+
+	p.new <- p
+	p.new[p == 0] <- paste('p <',1/n)
+	return(p.new)
+}
 pval.2tail.np <- function(test.val,dist){
   # test.val: individual value being compared to distribution
   # dist: vector,distribution of values under some null model, or otherwise

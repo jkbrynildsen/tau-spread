@@ -18,26 +18,20 @@ for(f.def in f.defs){
   fig.dir.j <- paste0(fig.dir,f,'/') # make figure directory
   dir.create(fig.dir.j,recursive = T)
   fig.dir.j <- paste0(fig.dir.j,f) # prefix for figure direction/Figure
-  desc <- c('script: code/diffmodel/plotCNDRspacebidirectionalfit.R',
+  desc <- c('script: code/diffmodel/plotCNDRspacebidirectionalonelmfit.R',
             grp,'(a) A combination of retrograde and anterograde diffusion models explains pathology spread.',
             '(b) The same as (a), coloring each point by hemisphere relative to injection site.',
-            '(c) Independent contributions of anterograde and retrograde spread over time, measured by standardized regression betas. Variance Inflation Factor reveals multicollinearity is not an issue',
-            '(d) Vulnerability/residuals from (a) vs MAPT expression.',
-            '(e) hemisphere and time (excluding 1 MPI) averaged vulnerability vs hemisphere averaged Mapt expression')
+            '(c) hemisphere and time (excluding 1 MPI) averaged vulnerability from (a) vs hemisphere averaged Mapt expression')
   write.table(x=desc,file = paste0(fig.dir.j,'.txt'),sep = '\n',row.names = F,col.names = F)
-  init <- paste0(opdir,'diffmodel/bidirectional/',injection.site.label,'/',grp,'CNDRSpaceFit_bidirectionaladditivemodel.pdf')
+  init <- paste0(opdir,'diffmodel/bidirectional_onelm/',injection.site.label,'/',grp,'CNDRSpaceFit_bidirectionaladditivemodel.pdf')
   file.copy(from=init,to=paste0(fig.dir.j,'a.pdf'))
-  init <- paste0(opdir,'diffmodel/bidirectional/',injection.site.label,'/',grp,'CNDRSpaceFitHemiColor_bidirectionaladditivemodel.pdf')
+  init <- paste0(opdir,'diffmodel/bidirectional_onelm/',injection.site.label,'/',grp,'CNDRSpaceFitHemiColor_bidirectionaladditivemodel.pdf')
   file.copy(from=init,to=paste0(fig.dir.j,'b.pdf'))
-  init <- paste0(opdir,'diffmodel/bidirectional/',injection.site.label,'/',grp,'CNDRSpaceFitAnteroRetroBetas_bidirectionaladditivemodel.pdf')
+  init <- paste0(opdir,'diffmodel/bidirectional_onelm/',injection.site.label,'/',grp,'CNDRSpaceHemiAverageVulnerability_Exclude1 MPI_bidirectionalmodel_vsMapt.pdf')
   file.copy(from=init,to=paste0(fig.dir.j,'c.pdf'))
-  init <- paste0(opdir,'diffmodel/bidirectional/',injection.site.label,'/',grp,'CNDRSpaceVulnerability_bidirectionalmodel_vsMaptRP_071204_01_D02.pdf')
-  file.copy(from=init,to=paste0(fig.dir.j,'d.pdf'))
-  init <- paste0(opdir,'diffmodel/bidirectional/',injection.site.label,'/',grp,'CNDRSpaceHemiAverageVulnerability_Exclude1 MPI_bidirectionalmodel_vsMaptRP_071204_01_D02.pdf')
-  file.copy(from=init,to=paste0(fig.dir.j,'e.pdf'))
-  init <- paste0(opdir,'diffmodel/bidirectional/',injection.site.label,'/',grp,'vulnerability_bidirectional_hemiaverage_exclude1 MPI.csv')
+  init <- paste0(opdir,'diffmodel/bidirectional_onelm/',injection.site.label,'/',grp,'vulnerability_bidirectional_hemiaverage_exclude1 MPI.csv')
   file.copy(from=init,to=paste0(fig.dir.j,'a_hemiaveragevulnerabilityexclude1MPI.csv'))
-  init <- paste0(opdir,'diffmodel/bidirectional/',injection.site.label,'/',grp,'log10predictedpath_bidirectional.csv')
+  init <- paste0(opdir,'diffmodel/bidirectional_onelm/',injection.site.label,'/',grp,'log10predictedpath_bidirectional.csv')
   file.copy(from=init,to=paste0(fig.dir.j,'a_log10predicted.csv'))
 }
 
@@ -66,21 +60,24 @@ init <- paste0(opdir,'nullmodels/euclidean/',injection.site.label,'/',grp,'CNDRS
 file.copy(from=init,to=paste0(fig.dir.j,'b.pdf'))
 
 # in silico injections
-file.copy(from=paste0(opdir,'insilico_injections'),to=paste0(fig.dir),recursive = T)
+file.copy(from=paste0(opdir,'insilico_injections_onelm'),to=paste0(fig.dir),recursive = T)
 
 # Figure 5. Relationship between vulnerability and pathology in NTG-G20, and consistency of vulnerability across hemispheres and time.
 fig.dir.j <- paste0(fig.dir,'Figure5','/') # make figure directory
 dir.create(fig.dir.j,recursive = T)
 fig.dir.j <- paste0(fig.dir.j,'Figure5') # prefix for figure direction/Figure
 grp <- 'NTG'
-desc <- c('(a) ratio of G20 to NTG regional pathology plotted against time-point specific vulnerability',
+desc <- c('script, a-b: code/G20vsNTG/NTGvuln_vs_groupdiff.',
+          'script, c-d: code/diffmodel/vuln_hemi_time.R',
+          'All using bidirectional one lm model',
+          '(a) ratio of G20 to NTG regional pathology plotted against time-point specific vulnerability',
           '(b) ratio of G20 to NTG regional pathology plotted against hemisphere and time averaged vulnerability, excluding 1 MPI',
           grp,'(c) Vulnerability values compared between hemispheres at each time point using wilcox rank sum. p-vals not adjusted for MC.',
           '(d) Spatial similarity of model residuals between each hemisphere-time point combo.')
 write.table(x=desc,file = paste0(fig.dir.j,'.txt'),sep = '\n',row.names = F,col.names = F)
-init <- paste0(opdir,'G20vsNTG/path_vs_vuln/bidirectional/',injection.site.label,'/G2019-NTGvsNTGVulnerability_Bidirectional_HemiTimeAverage_exclude1 MPI.pdf')
+init <- paste0(opdir,'G20vsNTG/path_vs_vuln/bidirectional_onelm/',injection.site.label,'/G2019-NTGvsNTGVulnerability_Bidirectional_HemiTimeAverage_exclude1 MPI.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'a.pdf'))
-init <- paste0(opdir,'G20vsNTG/path_vs_vuln/bidirectional/',injection.site.label,'/G2019-NTGvsNTGVulnerability_Bidirectional_TimeDependent.pdf')
+init <- paste0(opdir,'G20vsNTG/path_vs_vuln/bidirectional_onelm/',injection.site.label,'/G2019-NTGvsNTGVulnerability_Bidirectional_TimeDependent.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'b.pdf'))
 init <- paste0(opdir,'diffmodel/vuln_time_hemi/',injection.site.label,'/',grp,'CompareVulnerabilityBetweenHemispheres.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'c.pdf'))
@@ -104,47 +101,53 @@ file.copy(from=init,to=paste0(fig.dir.j,'b.pdf'))
 init <- paste0(opdir,'nullmodels/seedspec_multi/',injection.site.label,'/',grp,'RandomSeedFitsVsConnectivity.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'c.pdf'))
 
-# train test
+# Figure 7. comparing retrograde, anterograde, bidirectional models in unseen test-set data
 fig.dir.j <- paste0(fig.dir,'Figure7','/') # make figure directory
 dir.create(fig.dir.j,recursive = T)
 fig.dir.j <- paste0(fig.dir.j,'Figure7') # prefix for figure direction/Figure
 grp <- 'NTG'
-desc <- c(grp,'(a) Distributions of model fit in held-out samples using time constants and regression coefficients estimated from an independent set of mice. Analysis reveals that time constants and regression coefficients generalize within the context of this experiment.',
-          '(b) Distributions of time constants reveals greater inter-sample variability in retrograde constants compared to anterograde. See Figure*bStats.txt for values. Implies that anterograde may be constant background, but retrograde may hold more importance for explaining individual differences in disease progression and possibly therapeutics as well')
-write.table(x=desc,file = paste0(fig.dir.j,'.txt'),sep = '\n',row.names = F,col.names = F)
-init <- paste0(opdir,'diffmodel/bidirectional_traintest/',injection.site.label,'/',grp,'TrainVsTestFits_CNDRSpace.pdf')
-file.copy(from=init,to=paste0(fig.dir.j,'a.pdf'))
-init <- paste0(opdir,'diffmodel/bidirectional_traintest/',injection.site.label,'/',grp,'TimeConstants_CNDRSpace.pdf')
-file.copy(from=init,to=paste0(fig.dir.j,'b.pdf'))
-init <- paste0(opdir,'diffmodel/bidirectional_traintest/',injection.site.label,'/',grp,'TimeConstantStats.txt')
-file.copy(from=init,to=paste0(fig.dir.j,'bStats.txt'))
+desc <- c(grp,'scripts: code/modelcomparison/modelcomparison_traintest.R and code/modelcomparison/plot_modelcomparison_testset.R',
+          '(a) Distributions of model fit in test set using retrograde, anterograde, euclidean, and bidirectional models.',
+          '(b) Matrix of fit differences (y-axis minus x-axis) Pairwise one-tailed non-parametric tests computing a p-value for the null hypothesis that \"model on the y-axis fits worse than model on x-axis\"',
+          'you can see that all connectivity models beat euclidean distance, then bidirectional > retro > antero.')
 
-# figure 8. bootstrap bidirectional models and compare NTG and G20
+write.table(x=desc,file = paste0(fig.dir.j,'.txt'),sep = '\n',row.names = F,col.names = F)
+init <- paste0(opdir,'modelcomparison/traintest/',injection.site.label,'/',grp,'ModelComparisonTestSetPearsonR_CNDRSpace.pdf')
+file.copy(from=init,to=paste0(fig.dir.j,'a.pdf'))
+init <- paste0(opdir,'modelcomparison/traintest/',injection.site.label,'/',grp,'ModelComparisonTestSetPearsonR_Matrix_CNDRSpace.pdf')
+file.copy(from=init,to=paste0(fig.dir.j,'b.pdf'))
+init <- paste0(opdir,'modelcomparison/traintest/',injection.site.label,'/',grp,'PValsModelComparisonTestSet.csv')
+file.copy(from=init,to=paste0(fig.dir.j,'pvals.csv'))
+
+# figure 8. bootstrap bidirectional models and compare NTG and G20 fits, time constants, anterograde/retrograde betas
 fig.dir.j <- paste0(fig.dir,'Figure8','/') # make figure directory
 dir.create(fig.dir.j,recursive = T)
 fig.dir.j <- paste0(fig.dir.j,'Figure8') # prefix for figure direction/Figure
-desc <- c('(a) Distributions of model fit (pearson r) for fitting data to bootstrap samples of mice. NTG and G20 do not differ in model fit (non-parametric, two-tailed test).',
+desc <- c('code: code/modelcomparison/bootstrap_optimspread_bidirectional.R and code/modelcomparison/G20vsNTG_bootstrap_onelm.R',
+          '(a) Distributions of model fit (pearson r) for fitting data to bootstrap samples of mice. NTG and G20 do not differ in model fit (non-parametric, two-tailed test).',
           '(b) Distributions of time constants reveals greater inter-sample variability in retrograde constants compared to anterograde. G20 and NTG do not differ wrt time constants. See Figure*bStats.txt for values. Implies that anterograde may be constant background, but retrograde may hold more importance for explaining individual differences in disease progression and possibly therapeutics as well',
           '(c) Comparing anterograde and retrograde betas between NTG and G20. p-values are bonferroni corrected over all between-group comparisons. anterograde spread importance differs at 6 MPI.',
-          '(c, 2) see file Figure8cStats.csv for comparisons between antero and retro within NTG or G20. See critical p-value after bonferroni correction.',
-          '(d) non-parametric comparison of vulnerability values between NTG and G20 reveals significant differences in vulnerability between the groups.',
-          '(d, 2) see Figure8d_pvals.txt for definition of asterisks. p-vals are uncorrected b/c we need a ton of bootstraps to have numerical precision for the new p-crit after bonferroni correction.')
+          '(c, 2) see file Figure8cStats.csv for comparisons between antero and retro within NTG or G20. See critical p-value after bonferroni correction.')#,
+          #'(d) non-parametric comparison of vulnerability values between NTG and G20 reveals significant differences in vulnerability between the groups.',
+          #'(d, 2) see Figure8d_pvals.txt for definition of asterisks. p-vals are uncorrected b/c we need a ton of bootstraps to have numerical precision for the new p-crit after bonferroni correction.')
 
 write.table(x=desc,file = paste0(fig.dir.j,'.txt'),sep = '\n',row.names = F,col.names = F)
-init <- paste0(opdir,'diffmodel/bidirectional_bootstrap/',injection.site.label,'/NTGvsG20BootstrapPearson r_CNDRSpace.pdf')
+init <- paste0(opdir,'modelcomparison/bootstrap/',injection.site.label,'/NTGvsG20BootstrapPearson r_CNDRSpace.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'a.pdf'))
-init <- paste0(opdir,'diffmodel/bidirectional_bootstrap/',injection.site.label,'/NTGvsG20TimeConstants_CNDRSpace.pdf')
+init <- paste0(opdir,'modelcomparison/bootstrap/',injection.site.label,'/NTGvsG20TimeConstants_CNDRSpace.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'b.pdf'))
-init <- paste0(opdir,'diffmodel/bidirectional_bootstrap/',injection.site.label,'/',grp,'TimeConstantStats.txt')
+init <- paste0(opdir,'modelcomparison/bootstrap/',injection.site.label,'/',grp,'TimeConstantStats.txt')
 file.copy(from=init,to=paste0(fig.dir.j,'bStats.txt'))
-init <- paste0(opdir,'diffmodel/bidirectional_bootstrap/',injection.site.label,'/NTGvsG20AnterogradeRetrogradeBetas_Boxplot_CNDRSpace.pdf')
+init <- paste0(opdir,'modelcomparison/bootstrap/',injection.site.label,'/NTGvsG20AnterogradeRetrogradeBetas_Boxplot_CNDRSpace.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'c.pdf'))
-init <- paste0(opdir,'diffmodel/bidirectional_bootstrap/',injection.site.label,'/NTGandG20_AnteroVsRetroBetas_Stats.csv')
-file.copy(from=init,to=paste0(fig.dir.j,'cStats.csv'))
-init <- paste0(opdir,'diffmodel/bidirectional_bootstrap/',injection.site.label,'/NTGvsG20BootstrapVulnerability_CNDRSpace.pdf')
-file.copy(from=init,to=paste0(fig.dir.j,'d.pdf'))
-init <- paste0(opdir,'diffmodel/bidirectional_bootstrap/',injection.site.label,'/NTGvsG20BootstrapVulnerability_CNDRSpace_pkey.txt')
-file.copy(from=init,to=paste0(fig.dir.j,'d_pvals.txt'))
+init <- paste0(opdir,'modelcomparison/bootstrap/',injection.site.label,'/NTGandG20_AnteroVsRetroBetas_Stats.csv')
+file.copy(from=init,to=paste0(fig.dir.j,'cStatsAnteroVsRetro.csv'))
+init <- paste0(opdir,'modelcomparison/bootstrap/',injection.site.label,'/NTGvsG20_AnteroAndRetroBetas_Stats.csv')
+file.copy(from=init,to=paste0(fig.dir.j,'cStatsNTGvsG20.csv'))
+# init <- paste0(opdir,'modelcomparison/bootstrap/',injection.site.label,'/NTGvsG20BootstrapVulnerability_CNDRSpace.pdf')
+# file.copy(from=init,to=paste0(fig.dir.j,'d.pdf'))
+# init <- paste0(opdir,'modelcomparison/bootstrap/',injection.site.label,'/NTGvsG20BootstrapVulnerability_CNDRSpace_pkey.txt')
+# file.copy(from=init,to=paste0(fig.dir.j,'d_pvals.txt'))
 
 # Figure 9. degree-preserving null models
 fig.dir.j <- paste0(fig.dir,'Figure9','/') # make figure directory
@@ -159,17 +162,4 @@ file.copy(from=init,to=paste0(fig.dir.j,'a.pdf'))
 init <- paste0(opdir,'nullmodels/rewire/',injection.site.label,'/',grp,'CNDRSpaceFit_OutDegreePreserved.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'b.pdf'))
 
-# Figure 10. comparing retrograde and anterograde through bootstrapping
-fig.dir.j <- paste0(fig.dir,'Figure10','/') # make figure directory
-dir.create(fig.dir.j,recursive = T)
-fig.dir.j <- paste0(fig.dir.j,'Figure10') # prefix for figure direction/Figure
-grp <- 'NTG'
-desc <- c(grp,'(a) Bootstrapped distributions of model fit using retrograde, anterograde, euclidean, and bidirectional models.',
-          '(b) Matrix of fit differences (y-axis minus x-axis) Pairwise one-tailed non-parametric tests computing a p-value for the null hypothesis that \"model on the y-axis fits worse than model on x-axis\"',
-          'you can see that all connectivity models beat euclidean distance, then bidirectional > retro > antero.')
 
-write.table(x=desc,file = paste0(fig.dir.j,'.txt'),sep = '\n',row.names = F,col.names = F)
-init <- paste0(opdir,'diffmodel/bidirectional_bootstrap/',injection.site.label,'/',grp,'ModelComparisonBootstrapPearsonR_CNDRSpace.pdf')
-file.copy(from=init,to=paste0(fig.dir.j,'a.pdf'))
-init <- paste0(opdir,'diffmodel/bidirectional_bootstrap/',injection.site.label,'/',grp,'ModelComparisonBootstrapPearsonR_Matrix_CNDRSpace.pdf')
-file.copy(from=init,to=paste0(fig.dir.j,'b.pdf'))

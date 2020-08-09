@@ -2,7 +2,7 @@
 ### Load data ###
 #################
 
-rm(list=setdiff(ls(),c('params','grp','injection.site','goi','probe')))
+rm(list=setdiff(ls(),c('params','grp','injection.site','goi')))
 print(grp)
 basedir <- params$basedir
 setwd(basedir)
@@ -18,7 +18,8 @@ tps <- params$tps
 col <- getGroupColors(params$grps)[grp] # get color for plots
 
 # exclude regions with 0 pathology at each time point for purposes of computing fit
-lapply(1:length(tps), function(t) paste0(t,' MPI: ',sum(df[[t]]$path != -Inf & !is.na(df[[t]]$pred.retro)),'/',nrow(df[[t]]),' regions left'))
+for(t. in 1:length(df)){colnames(df[[t.]]) <- c('y','pred.retro','pred.antero')} # rename regression predictors for consistency and interpretability. This should actually be done in optimfxns.R: lm.mask.ant.ret.all
+lapply(1:length(tps), function(t) paste0(t,' MPI: ',sum(df[[t]]$y != -Inf & !is.na(df[[t]]$pred.retro)),'/',nrow(df[[t]]),' regions left'))
 
 ##########################################################
 ### add together anterograde and retrograde prediction ###
@@ -52,8 +53,9 @@ ggsave(p,filename = paste(savedir,grp,'CNDRSpaceFitHemiColor_bidirectionaladditi
 df.vuln <- df.pred <- data.frame(matrix(ncol=length(tps),nrow=n.regions.CNDR, dimnames=list(path.names, paste(tps,'MPI'))),check.names = FALSE)
 for(t in 1:length(tps)){
   regions.mpi <- names(vulnerability[[t]]) # get the regions that had non-zero pathology at each tp (so log can be computed)
-  df.vuln[regions.mpi,paste(tps[t],'MPI')] <- vulnerability[[t]][regions.mpi]
-  df.pred[regions.mpi,paste(tps[t],'MPI')] <- pred[[t]][regions.mpi]
+  regions.mpi.path.names <- substr(regions.mpi,1,nchar(regions.mpi)-2) # get names of regions without "_1" ("_$MPI") appended
+  df.vuln[regions.mpi.path.names,paste(tps[t],'MPI')] <- vulnerability[[t]][regions.mpi]
+  df.pred[regions.mpi.path.names,paste(tps[t],'MPI')] <- pred[[t]][regions.mpi]
 }
 
 # compute intrinsic vulnerability as an average over time and hemispheres
@@ -69,56 +71,20 @@ write.csv(df.pred,paste0(savedir,grp,'log10predictedpath_bidirectional.csv')) # 
 ### Add gene data ###
 #####################
 
-# load gene data specified by goi, probe input variables
-gene.exp <- read.csv(paste0(basedir,'data/aba/expression/',goi,probe,'ExpressionCNDR.csv'),row.names = 1)
-df.gene <- lapply(df, function(x) merge(x,gene.exp,by=0)) # merge with pathology data frame
-for(j in 1:length(df.gene)){rownames(df.gene[[j]]) <- df.gene[[j]]$Row.names} # remove row names
-for(j in 1:length(df.gene)){df.gene[[j]] <- df.gene[[j]][,-1]}
+# load gene data specified by goi input variable
+gene.exp.ABA <- read.csv('data/aba/expression/AllGeneExpression_Fulcher2019.csv',row.names = 1)
+df.gene <- hemi.expand.names(gene.exp.ABA)[,goi,drop=F] # make expression hemispherically symmetric and select gene of interest (Mapt)
+df.gene.CNDR <- quiet(map.ABA.to.CNDR(df.gene,path.names,ABA.to.CNDR.key)) # convert gene expression data from ABA to CNDR space
 
-##########################################################################
-### show how gene expression correlates with residuals of spread model ###
-##########################################################################
-
-vuln.gene <- lapply(vulnerability, function(v) merge(as.data.frame(v),gene.exp,by=0))
-p <- lapply(1:length(tps), function(t)
-  p.xy(x=vuln.gene[[t]][,paste0(goi,'_',probe)],y=vuln.gene[[t]]$v,ylab='Vulnerability',xlab=paste0(goi,' Expression'),
-       ttl=paste0(grp,': ',tps[t],' MPI'),col=col,alpha=0.7))
-p <- plot_grid(plotlist=p,align='hv',nrow=1)
-ggsave(p,filename = paste(savedir,grp,'CNDRSpaceVulnerability_bidirectionalmodel_vs',goi,probe,'.pdf',sep=''),
-       units = 'cm',height = 3.75,width = 3.75*length(tps),useDingbats=FALSE)
-
+##################################################################################
+### show how gene expression correlates with hemisphere averaged vulnerability ###
+##################################################################################
+df.gene.vuln <- merge(hemi.average.vuln,hemi.average(df.gene.CNDR),by=0)
+rownames(df.gene.vuln) <- df.gene.vuln$Row.names # delete row name column and make row name attribute
+df.gene.vuln <- df.gene.vuln[,-1] 
 # look at hemisphere average vulnerability
-hemi.average(gene.exp)
-p <- p.xy(x=hemi.average(gene.exp)$v,y=hemi.average.vuln$v,ylab='Vulnerability',xlab=paste0(goi,' Expression'),
+hemi.average(df.gene.CNDR) # since we duplicated the hemispheres for gene expression this is not changing the data, just unduplicating them and returning to region names without 'i' or 'c'
+p <- p.xy(x=df.gene.vuln$v.y,y=df.gene.vuln$v.x,ylab='Vulnerability',xlab=paste0(goi,' Expression'),
           ttl=paste0(grp,': ',tps[t],' MPI'),col=col,alpha=0.7)
-ggsave(p,filename = paste(savedir,grp,'CNDRSpaceHemiAverageVulnerability_Exclude',tp.excl,'_bidirectionalmodel_vs',goi,probe,'.pdf',sep=''),
+ggsave(p,filename = paste(savedir,grp,'CNDRSpaceHemiAverageVulnerability_Exclude',tp.excl,'_bidirectionalmodel_vs',goi,'.pdf',sep=''),
        units = 'cm',height = 3.75,width = 3.75,useDingbats=FALSE)
-
-##############################
-### Include genes in model ###
-##############################
-
-m <- lapply(df.gene, function(df.i) m <- lm(path~.,data=inf.nan.mask(df.i)))
-vulnerability <- lapply(m,residuals)
-pred <- lapply(m, function(m.i) m.i$fitted.values)
-
-p <- lapply(1:length(tps), function(t)
-  p.xy(x=m[[t]]$fitted.values,y=m[[t]]$model$path,ylab='Actual',xlab='Predicted',
-       ttl=paste0(grp,': ',tps[t],' MPI'),col=col,alpha=0.7))
-p <- plot_grid(plotlist=p,align='hv',nrow=1)
-ggsave(p,filename = paste(savedir,grp,'CNDRSpaceFit_bidirectionalmodel+',goi,probe,'.pdf',sep=''),
-       units = 'cm',height = 3.75,width = 3.75*length(tps),useDingbats=FALSE)
-
-# concatenate predicted path (fitted vals, y-hat) and vulnerability (residuals, y-yhat) into one dataframe
-# initialize empty data frame with all CNDR regions and time points
-df.vuln <- df.pred <- data.frame(matrix(ncol=length(tps),nrow=n.regions.CNDR, dimnames=list(path.names, paste(tps,'MPI'))),check.names = FALSE)
-for(t in 1:length(tps)){
-  regions.mpi <- names(vulnerability[[t]]) # get the regions that had non-zero pathology at each tp (so log can be computed)
-  df.vuln[regions.mpi,paste(tps[t],'MPI')] <- vulnerability[[t]][regions.mpi]
-  df.pred[regions.mpi,paste(tps[t],'MPI')] <- pred[[t]][regions.mpi]
-}
-
-write.csv(hemi.average(df.vuln),paste0(savedir,grp,'vulnerability_bidirectional',goi,probe,'_hemiaverage.csv'))
-df.vuln <- cbind(df.vuln,Average=rowMeans(df.vuln,na.rm = T)) # compute average vulnerability across time points, ignoring regions with 0 path
-write.csv(df.vuln,paste0(savedir,grp,'vulnerability_bidirectional',goi,probe,'.csv'))
-write.csv(df.pred,paste0(savedir,grp,'predictedpath_bidirectional',goi,probe,'.csv'))

@@ -15,8 +15,8 @@ source('code/misc/plottingfxns.R')
 #################
 
 load(paste(params$opdir,'processed/pathdata.RData',sep=''))  # load path data and ROI names
-load(file = paste(savedir,grp,'AlternateSeedFits.RData',sep=''))
-load(file = paste(params$opdir,'diffmodel/bidirectional/',paste0(injection.site,collapse='-'),'/',grp,'CNDRSpaceBidirectionalFit_data.RData',sep=''))
+load(file = paste(savedir,grp,'AlternateSeedFits_OneLM.RData',sep=''))
+load(file = paste(params$opdir,'diffmodel/bidirectional_onelm/',paste0(injection.site,collapse='-'),'/',grp,'CNDRSpaceBidirectionalOptimOneLM_data.RData',sep=''))
 
 # compute p-value as probability that other seeds predict observed path better than iCPu seed
 
@@ -31,16 +31,18 @@ seed.region.pval <- colMeans(do.call(rbind,lapply(1:nrow(null.cors), function(X)
 
 months <- paste(params$tps,'MPI')
 months.mat <- do.call(rbind,lapply(1:nrow(null.cors), function(X) months))
+p.labs <- paste('p =',signif(seed.region.pval,2))
+p.labs[seed.region.pval ==0] <- paste0('p < ',1/nrow(null.cors))
 p.null.seeds <- ggplot() + 
   geom_jitter(aes(x=as.vector(months.mat),y = as.vector(null.cors)),color ='#5F4B8B',alpha = 0.5,stroke = 0,size = 1, width=0.25) +
   geom_point(aes(x=months,y=as.numeric(inj.cor)),shape = 18,color = 'black',size=2) + 
-  geom_text(aes(x=months,y=0.8,label = paste('p =',signif(seed.region.pval,2))),size=2.5) +
+  geom_text(aes(x=months,y=0.8,label = p.labs),size=2.5) +
   xlab('') + ylab('Fit') + ggtitle('Actual vs. Random Seed') + theme_bw() +
   theme(text = element_text(size=8),plot.title = element_text(hjust=0.5,size=8)) +
   theme(axis.text.x = element_text(size=8)) + theme(axis.text.y = element_text(size=8))
 p.null.seeds
 
-ggsave(p.null.seeds,filename=paste(savedir,grp,'SeedSpecificity.pdf',sep=''),
+ggsave(p.null.seeds,filename=paste(savedir,grp,'SeedSpecificity_OneLM.pdf',sep=''),
 	width=7,height=5,units='cm')
 
 # relate alternate fit to connectivity and distance
@@ -60,8 +62,8 @@ inj.dist <- sapply(alt.seed.sites, function(sites) mean(D.mat[injection.site,sit
 
 tps <- params$tps
 # fit gams at each time point to compare relationship between null site performance
-am <- lapply(1:length(tps), function(t.) gam(null.cors[,t.] ~ s(inproj.sim,k=3) + s(outproj.sim,k=3) +alt.seed.distances + s(inj.dist,k=3),data = df,method = 'REML'))
+am <- lapply(1:length(tps), function(t.) gam(null.cors[,t.] ~ s(inproj.sim,k=3) + s(outproj.sim,k=3) +alt.seed.distances + s(inj.dist,k=3),method = 'REML'))
 p.list <- lapply(am,function(am.i) p.xy(x=am.i$fitted.values,y=am.i$y,xlab = 'Connectivity Similarity',ylab='Fit to Random Sites',col=wes_palettes$Zissou1[3],alpha=0.5,sm.method = 'gam',formula =y~s(x,k=3)))
 p <- plot_grid(plotlist=p.list,align='hv',nrow=1)
-ggsave(p,filename=paste(savedir,grp,'RandomSeedFitsVsConnectivity.pdf',sep=''),
+ggsave(p,filename=paste(savedir,grp,'RandomSeedFitsVsConnectivity_OneLM.pdf',sep=''),
        height=3.75,width=3.75*length(tps),units='cm')
