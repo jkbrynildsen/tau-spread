@@ -32,38 +32,38 @@ L.out.D <- get.Lout(D.mat,rep(1,nrow(D.mat))) # compute out-degreee Laplacian fo
 # load path data and get training/testing sets
 tps <- params$tps
 Mice <- lapply(tps, function(tp) path.data[path.data$Condition == grp & path.data$Month == tp,path.names])
-nreps <- 500
+nreps <- 100
 tf <- 0.5
 list[log.path.train,log.path.test,train.idx] <- train.test.logmeanpath(Mice,nreps = nreps,tf = 0.5)
 
 # set up controls for all models
 Xo <- get.Xo(region.names,injection.site) # seed pathology in iCPu
-injection.site.CNDR <- unname(params$injection.site.CNDR[injection.site]) # convert injection site from ABA to CNDR
 scipy.linalg <- reticulate::import('scipy.linalg') # import scipy matrix exponential function because it's faster
   # c.retro, c.antero: use values from bidirectional fit to initialize
-load(file=paste0(params$opdir,'diffmodel/bidirectional/',paste0(injection.site,collapse='-'),'_independentfit/',grp,'CNDRSpaceIndependentBidirectionalFit_params.RData'))
+#load(file=paste0(params$opdir,'diffmodel/bidirectional/',paste0(injection.site,collapse='-'),'_independentfit/',grp,'CNDRSpaceIndependentBidirectionalFit_params.RData'))
+c.Grp.antero <- 0.02223111; c.Grp.retro <- 0.006070303
+
 ctrl.optim <- list(fnscale=-1) # set controls for optim function -- maximize the objective function instead of minimizing (default)
 ctrl <- list(Retrograde=L.out.retro,Anterograde=L.out.antero,Euclidean=L.out.D,
              Xo=Xo,fxn=scipy.linalg$expm,ABA.to.CNDR.key=ABA.to.CNDR.key,tps=tps,
              c.r.a.init=c(c.Grp.retro,c.Grp.antero),
              ctrl.optim=ctrl.optim,
              c.rng=seq(params$c.min,params$c.max,length.out = params$c.n),
-             one.lm=FALSE)
+             one.lm=FALSE,excl.inj=params$injection.site.CNDR)
 
 # Loop through model types, train on train sets, evaluate on train and test sets
-mdl.names <- c('Euclidean','Retrograde','Anterograde','Bidirectional','BidirectionalOneLM')
+mdl.names <- c('BidirectionalOneLM','Euclidean','Retrograde','Anterograde')
 results <- list()
+
 for(mdl.name in mdl.names){
   print(paste('training and testing',mdl.name))
   
   if(mdl.name == 'Euclidean'){
-    ctrl$Xo <- get.Xo(region.names.mdl,injection.site) # exclude regions with missing coordinate data
-    ctrl$excl.inj <- injection.site.CNDR # exclude injection sites which end up being major outliers in this model
-    ctrl$c.rng <- ctrl$c.rng + 0.1 # shift c.rng to capture different range of optimal time constants in Euclidean distance model
+    ctrl$Xo <- get.Xo(region.names.mdl,injection.site) # exclude regions with missing coordinate data    
+    ctrl$c.rng <- ctrl$c.rng + 0.15 # shift c.rng to capture different range of optimal time constants in Euclidean distance model
     } 
   else { # restore default parameters for other models
     ctrl$Xo <- get.Xo(region.names,injection.site)
-    ctrl$excl.inj <- NULL
     ctrl$c.rng <- seq(params$c.min,params$c.max,length.out = params$c.n)
   }
   
@@ -79,4 +79,4 @@ for(mdl.name in mdl.names){
 }
 
 # save data
-save(results,Mice,file = paste(savedir,grp,'CNDRSpaceModelComparison_TrainTest.RData',sep=''))
+save(results,Mice,file = paste(savedir,grp,'CNDRSpaceModelComparison_TrainTest_ExcludeInjectionSites.RData',sep=''))

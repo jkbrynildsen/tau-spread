@@ -30,6 +30,7 @@ L.out.antero <- get.Lout(W,rep(1,n.regions.ABA),ant.ret='antero') # compute out-
 #########################################################################################
 
 Xo <- get.Xo(region.names,injection.site) # seed pathology in iCPu
+injection.site.CNDR <- unname(params$injection.site.CNDR[injection.site]) # convert injection site from ABA to CNDR
 scipy.linalg <- reticulate::import('scipy.linalg') # import scipy matrix exponential function because it's faster
 #params.opt <- c(0.006070303,0.02223111) # c.retro, c.antero: use values from independent fit to initialize
 #params.opt <- c(0.01,0.01) # c.retro, c.antero: use values from independent fit to initialize
@@ -39,7 +40,7 @@ ctrl <- list(fnscale=-1) # minimize objective function
 
 params.opt.fit <- optim(params.opt,c.CNDRspace.objective,control = ctrl, method = 'L-BFGS-B',lower=c(10e-7,10e-7), # optimization. c's must be > 0
                         log.path=log.path,tps=tps,L.out.retro=L.out.retro,L.out.antero=L.out.antero,
-                        Xo=Xo,ABA.to.CNDR.key=ABA.to.CNDR.key,fxn =scipy.linalg$expm,one.lm=TRUE) # static inputs
+                        Xo=Xo,ABA.to.CNDR.key=ABA.to.CNDR.key,fxn =scipy.linalg$expm,one.lm=TRUE,excl.inj.CNDR=NULL) # static inputs
 
 # extract parameters from 
 c.Grp.retro <- params.opt.fit$par[1]

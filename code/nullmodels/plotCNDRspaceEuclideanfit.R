@@ -28,13 +28,32 @@ p <- plot_grid(plotlist=p,align='hv',nrow=1)
 ggsave(p,filename = paste(savedir,grp,'CNDRSpaceFit_Euclidean.pdf',sep=''),
        units = 'cm',height = 3.75,width = 3.75*length(tps),useDingbats=FALSE)
 
+# plot fit and label each region
+geom_label_repel(aes(label = Region),
+                 point.padding = 0.5,
+                 segment.color = 'grey50')
+p <- list()
+for(t. in 1:length(tps)){
+  t.path.names <- substr(rownames(df[[t.]]),1,nchar(rownames(df[[t.]])))
+  df.tmp <- data.frame(x=df[[t.]]$pred,y=df[[t.]]$path,lab=t.path.names)
+  df.tmp$z <- scale(df.tmp$x,center=T)
+  #df.tmp <- df.tmp[substr(rownames(df.tmp),1,1) == 'i',]
+  df.tmp <- df.tmp[abs(df.tmp$z) >1.5,]
+  p[[t.]] <- p.xy(x=df[[t.]]$pred,y=df[[t.]]$path,ylab='Actual',xlab='Predicted',
+                  ttl=paste0(grp,': ',tps[t.],' MPI'),col=col,alpha=0.7) + geom_label_repel(data=df.tmp,aes(x=x,y=y,label=lab),
+                                                                                            point.padding = 0.5,label.size=0.05,size=1,label.r=0.1,
+                                                                                            segment.color = 'grey50')
+}
+
+p <- plot_grid(plotlist=p,align='hv',nrow=1)
+ggsave(p,filename = paste(savedir,grp,'CNDRSpaceFit_Euclidean_label_repel.pdf',sep=''),
+       units = 'cm',height = 3.75,width = 3.75*length(tps),useDingbats=FALSE)
+
 # same plot as above excluding injection sites. i don't know why these are outliers consistently.
 # it could be because the distance matrices are fully dense so pathology always gets back there?
 
 injection.site.CNDR <- unname(params$injection.site.CNDR[injection.site]) # convert injection site from ABA to CNDR
 df.excl <- lapply(df, function(X) X[path.names[!path.names %in% injection.site.CNDR],])
-# or do this by excluding outliers
-df.excl <- lapply(df, function(X) X[X$pred < quantile(X$pred,.95,na.rm=T),])
 
 p <- lapply(1:length(tps), function(t) 
   p.xy(x=df.excl[[t]]$pred,y=df.excl[[t]]$path,ylab='Actual',xlab='Predicted',

@@ -11,9 +11,10 @@ params <- list(basedir=basedir,
                c.min = 1e-5, # empirically conservative minimum for time constant
                c.max = 0.2, # empirically conservative maximum for time constant
                c.n = 100) # number of time constants to try
+params$excl.inj.CNDR <- unname(params$injection.site.CNDR[params$injection.site]) # exclude injection sites from fit calculation; if NULL all injection sites are included
 source('code/misc/miscfxns.R')
 params$source.save <- source.save
-params$opdir <- paste('TauDiffusion032520_Inject',paste0(params$injection.site,collapse='-'),'_CMax',params$c.max,'/',sep='')
+params$opdir <- paste('TauDiffusion100120_Inject',paste0(params$injection.site,collapse='-'),'_CMax',params$c.max,'/',sep='')
 dir.create(params$opdir,recursive = T)
 
 #################################################
@@ -56,20 +57,6 @@ goi <- 'Mapt'
 probe <- 'RP_071204_01_D02'
 source('code/diffmodel/plotCNDRspacefit.R')
 
-#injection.sites <- c(as.list(params$injection.site),list(params$injection.site),list(c('iDG','iCA1','iCA3'))) # use each seed site separately, all together, and then do entire hippocampus
-injection.sites <- c(list(params$injection.site))
-# bidirectional, independent, additive diffusion model: anterograde and retrograde additive and independent
-for(injection.site in injection.sites){
-  print(injection.site)
-  for(grp in params$grps){
-    #source('code/diffmodel/analyzebidirectionalspread_CNDRspace.R') # fit time constants independently to get initial parameters
-    source('code/diffmodel/optim_bidirectionalspread_CNDRspace.R')
-    goi <- 'Mapt'
-    probe <- 'RP_071204_01_D02'
-    source('code/diffmodel/plotCNDRspacebidirectionalfit.R')
-  }
-}
-
 # bidirectional diffusion model with different a single linear model weighting anterograde and retrograde
 # Manuscript: Figure 4A (NTG) model fit by month, 5B (NTG) residuals vs. MAPT exp
 for(grp in params$grps){
@@ -106,7 +93,7 @@ for(injection.site in injection.sites){
   #source('code/modelcomparison/modelcomparison_traintest.R')
 }
 source('code/modelcomparison/plot_modelcomparison_testset.R')
-
+source('code/modelcomparison/plot_modelcomparison_testset_exclinj.R')
 ###############################
 ### Genes and vulnerability ###
 ###############################

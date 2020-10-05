@@ -39,6 +39,39 @@ p <- plot_grid(plotlist=p,align='hv',nrow=1)
 ggsave(p,filename = paste(savedir,grp,'CNDRSpaceFit_bidirectionaladditivemodel.pdf',sep=''),
        units = 'cm',height = 3.75,width = 3.75*length(tps),useDingbats=FALSE)
 
+# exclude injection sites - concern that injection sites are outliers throwing off measurement of fit
+injection.site.CNDR <- unname(params$injection.site.CNDR[injection.site]) # convert injection site from ABA to CNDR
+excl.inj <- lapply(1:length(tps), function(t.) paste0(injection.site.CNDR,'_',t.))
+
+p <- lapply(1:length(tps), function(t.) 
+  p.xy(x=pred[[t.]][!df.rnames[[t.]] %in% excl.inj[[t.]]],y=path.t[[t.]][!df.rnames[[t.]] %in% excl.inj[[t.]],],ylab='Actual',xlab='Predicted',
+       ttl=paste0(grp,': ',tps[t.],' MPI'),col=col,alpha=0.7))
+p <- plot_grid(plotlist=p,align='hv',nrow=1)
+
+ggsave(p,filename = paste(savedir,grp,'CNDRSpaceFit_bidirectionaladditivemodel_ExcludeInjectionSites.pdf',sep=''),
+       units = 'cm',height = 3.75,width = 3.75*length(tps),useDingbats=FALSE)
+
+# plot fit and label each region
+geom_label_repel(aes(label = Region),
+                 point.padding = 0.5,
+                 segment.color = 'grey50')
+p <- list()
+for(t. in 1:length(tps)){
+  t.path.names <- substr(names(pred[[t.]]),1,nchar(names(pred[[t.]]))-2)
+  df.tmp <- data.frame(x=pred[[t.]],y=path.t[[t.]],lab=t.path.names)
+  df.tmp$z <- scale(df.tmp$x,center=T)
+  #df.tmp <- df.tmp[substr(rownames(df.tmp),1,1) == 'i',]
+  df.tmp <- df.tmp[abs(df.tmp$z) >1.5,]
+  p[[t.]] <- p.xy(x=pred[[t.]],y=path.t[[t.]],ylab='Actual',xlab='Predicted',
+   ttl=paste0(grp,': ',tps[t.],' MPI'),col=col,alpha=0.7) + geom_label_repel(data=df.tmp,aes(x=x,y=y,label=lab),
+                     point.padding = 0.5,label.size=0.05,size=1,label.r=0.1,
+                     segment.color = 'grey50')
+}
+  
+p <- plot_grid(plotlist=p,align='hv',nrow=1)
+ggsave(p,filename = paste(savedir,grp,'CNDRSpaceFit_bidirectionaladditivemodel_label_repel.pdf',sep=''),
+       units = 'cm',height = 3.75,width = 3.75*length(tps),useDingbats=FALSE)
+
 # plot fit and separately display hemispheres
 
 p <- lapply(1:length(tps), function(t) 

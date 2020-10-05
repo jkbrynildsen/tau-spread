@@ -167,7 +167,7 @@ c.fit <- function(log.path,L.out,Xo,c.rng){
   return(c)
 }
 
-c.CNDRspace.fit <- function(log.path,tps,L.out,Xo,c.rng,ABA.to.CNDR.key){
+c.CNDRspace.fit <- function(log.path,tps,L.out,Xo,c.rng,ABA.to.CNDR.key,excl.inj.CNDR){
   # fits time constant by modeling CNDR data
   # INPUTS:
   # log.path: list of vectors of log-10 transformed pathology scores *in CNDR space*  
@@ -176,6 +176,7 @@ c.CNDRspace.fit <- function(log.path,tps,L.out,Xo,c.rng,ABA.to.CNDR.key){
   # L.out: out-degree graph laplacian of anatomical connectivity matrix
   # Xo: vector of initial pathology
   # c.rng: range of time constants to test
+  # excl.inj.CNDR: vector of injection sites in CNDR space to exclude when computing fit
 
   # this function runs diffusion model in ABA space, 
   # but computes correlation with real data in CNDR annotation space to assess fit of time constant c
@@ -188,6 +189,11 @@ c.CNDRspace.fit <- function(log.path,tps,L.out,Xo,c.rng,ABA.to.CNDR.key){
   #log.path <- lapply(1:length(log.path), function(t) log.path[[t]][mask[[t]]])
   # compute fit at each time point for range of time
   Xt.sweep <- matrix(NA,nrow=length(c.rng),ncol=length(tps))
+  
+  if(!is.null(excl.inj.CNDR)){ # exclude injection sites from fit by setting them to -Inf in log.path so they'll be excluded by cor.mask below
+    for(t. in 1:length(tps)){log.path[[t.]][excl.inj.CNDR] <- -Inf}
+  }
+
   for(c.i in 1:length(c.rng)){
   print(paste0('c ',c.i,' out of ',length(c.rng)))
     c.val <- c.rng[c.i]

@@ -15,11 +15,13 @@ grp <- 'NTG'
 fig.dir.j <- paste0(fig.dir,'Figure4','/') # make figure directory
 dir.create(fig.dir.j,recursive = T)
 fig.dir.j <- paste0(fig.dir.j,'Figure4') # prefix for figure direction/Figure
-desc <- c('script, a: code/diffmodel/optim_bidirectionalspread_onelm_CNDRspace.R and code/diffmodel/plotCNDRspacebidirectionalonelmfit.R',
+desc <- c('script, a: code/diffmodel/optim_bidirectionalspread_onelm_CNDRspace.R and code/diffmodel/optim_bidirectionalspread_onelm_CNDRspace.R',
           'script, b: code/nullmodels/analyzespread_Euclidean_CNDRspace.R and code/nullmodels/plotCNDRspaceEuclideanfit.R',
           'script, d: code/modelcomparison/modelcomparison_traintest.R and code/modelcomparison/plot_modelcomparison_testset.R',
           grp,'(a) A combination of retrograde and anterograde diffusion models explains pathology spread.',
+          '(a_labeled) (a), with individual regions labeled.',
           '(b) Predicted vs. actual for optimized diffusion model where the network is the matrix of inverse euclidean distances between the center of mass of each ABA region.',
+          '(b_labeled) (b), with individual regions labeled.',
           '(c) alternate seeds fit worse than real seeds for 3-9 MPI',
           '(d) Distributions of model fit in test set using retrograde, anterograde, euclidean, and bidirectional models.',
           '(d, extra) Matrix of fit differences (y-axis minus x-axis) Pairwise one-tailed non-parametric tests computing a p-value for the null hypothesis that \"model on the y-axis fits worse than model on x-axis\"',
@@ -28,10 +30,14 @@ desc <- c('script, a: code/diffmodel/optim_bidirectionalspread_onelm_CNDRspace.R
 write.table(x=desc,file = paste0(fig.dir.j,'.txt'),sep = '\n',row.names = F,col.names = F)
 init <- paste0(opdir,'diffmodel/bidirectional_onelm/',injection.site.label,'/',grp,'CNDRSpaceFit_bidirectionaladditivemodel.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'a.pdf'))
+init <- paste0(opdir,'diffmodel/bidirectional_onelm/',injection.site.label,'/',grp,'CNDRSpaceFit_bidirectionaladditivemodel_label_repel.pdf')
+file.copy(from=init,to=paste0(fig.dir.j,'a_labeled.pdf'))
 init <- paste0(opdir,'diffmodel/bidirectional_onelm/',injection.site.label,'/',grp,'log10predictedpath_bidirectional.csv')
 file.copy(from=init,to=paste0(fig.dir.j,'a_log10predicted.csv'))
 init <- paste0(opdir,'nullmodels/euclidean/',injection.site.label,'/',grp,'CNDRSpaceFit_Euclidean.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'b.pdf'))
+init <- paste0(opdir,'nullmodels/euclidean/',injection.site.label,'/',grp,'CNDRSpaceFit_Euclidean_label_repel.pdf')
+file.copy(from=init,to=paste0(fig.dir.j,'b_labeled.pdf'))
 init <- paste0(opdir,'nullmodels/seedspec_multi/',injection.site.label,'/',grp,'SeedSpecificity_OneLM.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'c.pdf'))
 init <- paste0(opdir,'modelcomparison/traintest/',injection.site.label,'/',grp,'ModelComparisonTestSetPearsonR_CNDRSpace.pdf')
@@ -51,7 +57,8 @@ desc <- c('script, a-: code/diffmodel/plotCNDRspacebidirectionalonelmfit.R',
           '(a) hemisphere and (excluding 1 MPI) averaged vulnerability from 4A',
           '(b) hemisphere and time (excluding 1 MPI) averaged vulnerability from 4A vs hemisphere averaged Mapt expression',
           '(c) *Spearman* correlation between Otero Garcia genes and vulnerability, averaged over hemi and time excluding 1 MPI, labeled with spearman r and FDR corrected p-value over TauVulnGOI.csv list',
-          '(c, stats) FDR, bonf, and uncorrected p-values for all plots in (c)')
+          '(c, stats) FDR, bonf, and uncorrected p-values for all plots in (c)',
+          '(d) *Spearman* correlation between all genes and vulnerability, averaged over hemi and time excluding 1 MPI, labeled with spearman r and FDR corrected p-value over ~4200 genes.')
 write.table(x=desc,file = paste0(fig.dir.j,'.txt'),sep = '\n',row.names = F,col.names = F)
 init <- paste0(opdir,'diffmodel/bidirectional_onelm/',injection.site.label,'/',grp,'vulnerability_bidirectional_hemiaverage_exclude1 MPI.csv')
 file.copy(from=init,to=paste0(fig.dir.j,'a_hemiaveragevulnerabilityexclude1MPI.csv'))
@@ -61,6 +68,8 @@ init <- paste0(opdir,'genes_vulnerability/',injection.site.label,'/',grp,'OteroG
 file.copy(from=init,to=paste0(fig.dir.j,'c.pdf'))
 init <- paste0(opdir,'genes_vulnerability/',injection.site.label,'/',grp,'OteroGarciaGenes.csv')
 file.copy(from=init,to=paste0(fig.dir.j,'c.csv'))
+init <- paste0(opdir,'genes_vulnerability/',injection.site.label,'/',grp,'VulnerabilityRelatedGenesFDRSpearman.pdf')
+file.copy(from=init,to=paste0(fig.dir.j,'d.pdf'))
 
 # Figure 6 in silico injections
 file.copy(from=paste0(opdir,'insilico_injections_onelm'),to=paste0(fig.dir),recursive = T)

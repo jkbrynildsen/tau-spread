@@ -57,7 +57,7 @@ lm.mask.ant.ret.all <- function(y,Xt.retro,Xt.antero){
   return(list(m=m,e=e,e.tp=e.tp,df=df.m)) 
 }
 
-c.CNDRspace.objective <- function(params.opt,log.path,tps,L.out.retro,L.out.antero,Xo,ABA.to.CNDR.key,fxn,one.lm){
+c.CNDRspace.objective <- function(params.opt,log.path,tps,L.out.retro,L.out.antero,Xo,ABA.to.CNDR.key,fxn,one.lm,excl.inj.CNDR=NULL){
   # fits time constant by modeling CNDR data
   # INPUTS:
   # OPTIMIZED:
@@ -77,6 +77,7 @@ c.CNDRspace.objective <- function(params.opt,log.path,tps,L.out.retro,L.out.ante
   # ABA.to.CNDR.key: key to convert ABA to CNDR regions
   # fxn: matrix exponential function (fastest is scipy.linalg through reticulate)
   # one.lm: logical indicating whether to fit time-point specific slopes and intercepts or just fit a single slope and intercept
+  # excl.inj.CNDR: vector of injection sites in CNDR space to exclude when computing fit
   #
   # this function runs diffusion model in ABA space, 
   # but computes correlation with real data in CNDR annotation space to assess fit of time constant c
@@ -91,6 +92,10 @@ c.CNDRspace.objective <- function(params.opt,log.path,tps,L.out.retro,L.out.ante
   c.retro <- params.opt[1]
   c.antero <- params.opt[2]
   
+  if(!is.null(excl.inj.CNDR)){ # exclude injection sites from fit by setting them to -Inf in log.path so they'll be excluded by cor.mask below
+    for(t. in 1:length(tps)){log.path[[t.]][excl.inj.CNDR] <- -Inf}
+  }
+
   ptm <- proc.time()
   Xt.retro <- do.call('cbind',lapply(tps,function(t.) predict.Lout(L.out.retro,Xo,c.retro,t.,fxn=scipy.linalg$expm))) # predict path using linear diff model into matrix that is region-by-time
   Xt.antero <- do.call('cbind',lapply(tps,function(t.) predict.Lout(L.out.antero,Xo,c.antero,t.,fxn=scipy.linalg$expm))) # predict path using linear diff model into matrix that is region-by-time

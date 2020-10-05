@@ -61,10 +61,11 @@ spread.model.unidirectional.train <- function(X.train,mdl.name,ctrl){
   # m.out: list with time constant, predicted values, time points, linear models, and model name
   
   # fit model
-  list[c.train,Xt.sweep] <- c.CNDRspace.fit(X.train,ctrl$tps,ctrl[[mdl.name]],ctrl$Xo,ctrl$c.rng,ctrl$ABA.to.CNDR.key)  
+  list[c.train,Xt.sweep] <- c.CNDRspace.fit(X.train,ctrl$tps,ctrl[[mdl.name]],ctrl$Xo,ctrl$c.rng,ctrl$ABA.to.CNDR.key,ctrl$excl.inj)  
 
   # get predicted values
   Xt.Grp <- do.call('cbind',lapply(tps, function(t) log(quiet(map.ABA.to.CNDR(predict.Lout(ctrl[[mdl.name]],ctrl$Xo,c.train,t,fxn=scipy.linalg$expm),names(ctrl$ABA.to.CNDR.key),ctrl$ABA.to.CNDR.key)), base = 10))) # predict pathology using connectivity, time constant, and seed    
+  Xt.Grp[rownames(Xt.Grp) %in% ctrl$excl.inj,] <- -Inf
   # fit linear models
   # concatenate pathology with predicted values
   df.train <- lapply(1:length(tps), function(t) data.frame(path = X.train[[t]], pred= Xt.Grp[,t,drop=FALSE]))
@@ -87,7 +88,7 @@ spread.model.bidirectional.train <- function(X.train,mdl.name,ctrl){
   L.out.antero <- ctrl$Anterograde
   params.opt.fit <- optim(ctrl$c.r.a.init,c.CNDRspace.objective,control = ctrl$ctrl.optim, method="L-BFGS-B",lower=c(1e-7,1e-7), # optimization. c's must be > 0
                           log.path=X.train,tps=ctrl$tps,L.out.retro=ctrl$Retrograde,L.out.antero=ctrl$Anterograde,
-                          Xo=ctrl$Xo,ABA.to.CNDR.key=ctrl$ABA.to.CNDR.key,fxn =ctrl$fxn,one.lm = ctrl$one.lm) # static inputs
+                          Xo=ctrl$Xo,ABA.to.CNDR.key=ctrl$ABA.to.CNDR.key,fxn =ctrl$fxn,one.lm = ctrl$one.lm,excl.inj.CNDR=ctrl$excl.inj) # static inputs
   # extract parameters from optimization output
   c.train.retro <- params.opt.fit$par[1]
   c.train.antero <- params.opt.fit$par[2]
@@ -95,6 +96,9 @@ spread.model.bidirectional.train <- function(X.train,mdl.name,ctrl){
   # get predicted values - apply log base 10 for fitting linear models
   Xt.Grp.retro <- do.call('cbind',lapply(tps, function(t) log(quiet(map.ABA.to.CNDR(predict.Lout(L.out.retro,Xo,c.train.retro,t,fxn=ctrl$fxn),path.names,ABA.to.CNDR.key)),base=10))) # predict pathology using connectivity, time constant, and seed
   Xt.Grp.antero <- do.call('cbind',lapply(tps, function(t) log(quiet(map.ABA.to.CNDR(predict.Lout(L.out.antero,Xo,c.train.antero,t,fxn=ctrl$fxn),path.names,ABA.to.CNDR.key)),base=10))) # predict pathology using connectivity, time constant, and seed
+  # exclude injection sites if specified in params
+  Xt.Grp.retro[rownames(Xt.Grp.retro) %in% ctrl$excl.inj,] <- -Inf
+  Xt.Grp.antero[rownames(Xt.Grp.antero) %in% ctrl$excl.inj,] <- -Inf
   # fit linear models
   if(ctrl$one.lm){
     list[m,e,m.fits,df] <- lm.mask.ant.ret.all(X.train,10^Xt.Grp.retro,10^Xt.Grp.antero) # undo log10 because this function has log10 built in
@@ -133,11 +137,13 @@ spread.model.eval <- function(m.out,X.test,save.resid=FALSE){
     df.test <- lapply(1:length(tps), function(t.) inf.nan.mask(cbind(df.test[[t.]],pred=predict(m.train[[t.]],df.test[[t.]]))) ) # add predicted values from linear models
     results$c.train.retro <- c.train.retro
     results$c.train.antero <- c.train.antero
+    results$m.train.coefs <- summary(lm.beta(m.train))$coef # store standardized coefficients
   } else if(mdl.name == 'BidirectionalOneLM'){
     df.test <- lapply(1:length(tps), function(t) data.frame(path = X.test[[t]], x1 = Xt.Grp.retro[,t,drop=FALSE], x2 =Xt.Grp.antero[,t,drop=FALSE]))
     df.test <- lapply(1:length(tps), function(t.) inf.nan.mask(cbind(df.test[[t.]],pred=predict(m.train,df.test[[t.]]))) ) # add predicted values from linear models
     results$c.train.retro <- c.train.retro
     results$c.train.antero <- c.train.antero
+    results$m.train.coefs <- summary(lm.beta(m.train))$coef # store standardized coefficients
   } else{
     # for all unidirectional models
     df.test <- lapply(1:length(tps), function(t) data.frame(path = X.test[[t]], pred = Xt.Grp[,t,drop=FALSE])) # use prediction from network diffusion mode (e^-(Lct)%*%Xo)
@@ -152,7 +158,7 @@ spread.model.eval <- function(m.out,X.test,save.resid=FALSE){
   fits.r <- sapply(df.test, function(df) cor(df$path,df$pred)) # extract fits as pearson r
   fits.mse <- sapply(df.test, function(df) mean((df$path-df$pred)^2)) # extract fits as MSE
   # save results (concatenate with existing results that has time constants)
-  results <- c(results,list(m.train.coefs=summary(lm.beta(m.train))$coef,fits.r=fits.r,fits.mse=fits.mse))
+  results <- c(results,list(fits.r=fits.r,fits.mse=fits.mse))
   
   if(save.resid){ # save model residuals with respect to input data?
     # see code/diffmodel/plotCNDRspacebidirectionalonelmfit.R for how to do this with one lm model
