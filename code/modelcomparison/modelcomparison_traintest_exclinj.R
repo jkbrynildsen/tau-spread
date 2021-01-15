@@ -43,6 +43,8 @@ scipy.linalg <- reticulate::import('scipy.linalg') # import scipy matrix exponen
 #load(file=paste0(params$opdir,'diffmodel/bidirectional/',paste0(injection.site,collapse='-'),'_independentfit/',grp,'CNDRSpaceIndependentBidirectionalFit_params.RData'))
 c.Grp.antero <- 0.02223111; c.Grp.retro <- 0.006070303
 
+params$injection.site.CNDR <- unname(params$injection.site.CNDR[params$injection.site])
+
 ctrl.optim <- list(fnscale=-1) # set controls for optim function -- maximize the objective function instead of minimizing (default)
 ctrl <- list(Retrograde=L.out.retro,Anterograde=L.out.antero,Euclidean=L.out.D,
              Xo=Xo,fxn=scipy.linalg$expm,ABA.to.CNDR.key=ABA.to.CNDR.key,tps=tps,
@@ -52,7 +54,8 @@ ctrl <- list(Retrograde=L.out.retro,Anterograde=L.out.antero,Euclidean=L.out.D,
              one.lm=FALSE,excl.inj=params$injection.site.CNDR)
 
 # Loop through model types, train on train sets, evaluate on train and test sets
-mdl.names <- c('BidirectionalOneLM','Euclidean','Retrograde','Anterograde')
+#mdl.names <- c('BidirectionalOneLM','Euclidean','Retrograde','Anterograde')
+mdl.names <- c('Euclidean')
 results <- list()
 
 for(mdl.name in mdl.names){

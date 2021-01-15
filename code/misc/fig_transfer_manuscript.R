@@ -56,19 +56,23 @@ desc <- c('script, a-: code/diffmodel/plotCNDRspacebidirectionalonelmfit.R',
           grp,'using bidirectional one lm vulnerability',
           '(a) hemisphere and (excluding 1 MPI) averaged vulnerability from 4A',
           '(b) hemisphere and time (excluding 1 MPI) averaged vulnerability from 4A vs hemisphere averaged Mapt expression',
-          '(c) *Spearman* correlation between Otero Garcia genes and vulnerability, averaged over hemi and time excluding 1 MPI, labeled with spearman r and FDR corrected p-value over TauVulnGOI.csv list',
-          '(c, stats) FDR, bonf, and uncorrected p-values for all plots in (c)',
-          '(d) *Spearman* correlation between all genes and vulnerability, averaged over hemi and time excluding 1 MPI, labeled with spearman r and FDR corrected p-value over ~4200 genes.')
+          '(c) List of genes whose spatial expression patterns are correlated with NTG vulnerability',
+          '(c) Spatial similarity of expression patterns between vulnerability-related genes (FDR corrected p<0.05 cut off for inclusion)',
+          '(d) Pearson correlation between all genes and vulnerability, averaged over hemi and time excluding 1 MPI, labeled with pearson r and FDR corrected p-value over ~4200 genes.')
 write.table(x=desc,file = paste0(fig.dir.j,'.txt'),sep = '\n',row.names = F,col.names = F)
 init <- paste0(opdir,'diffmodel/bidirectional_onelm/',injection.site.label,'/',grp,'vulnerability_bidirectional_hemiaverage_exclude1 MPI.csv')
 file.copy(from=init,to=paste0(fig.dir.j,'a_hemiaveragevulnerabilityexclude1MPI.csv'))
 init <- paste0(opdir,'diffmodel/bidirectional_onelm/',injection.site.label,'/',grp,'CNDRSpaceHemiAverageVulnerability_Exclude1 MPI_bidirectionalmodel_vsMapt.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'b.pdf'))
-init <- paste0(opdir,'genes_vulnerability/',injection.site.label,'/',grp,'OteroGarciaGenesFDRSpearman.pdf')
+init <- paste0(opdir,'genes_vulnerability/',injection.site.label,'/',grp,'Top100GenesVulnerabilitypearson.csv')
+file.copy(from=init,to=paste0(fig.dir.j,'cVulnGenes.csv'))
+init <- paste0(opdir,'genes_vulnerability/',injection.site.label,'/',grp,'SimilarityOfVulnerabilityRelatedGenespearson.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'c.pdf'))
-init <- paste0(opdir,'genes_vulnerability/',injection.site.label,'/',grp,'OteroGarciaGenes.csv')
-file.copy(from=init,to=paste0(fig.dir.j,'c.csv'))
-init <- paste0(opdir,'genes_vulnerability/',injection.site.label,'/',grp,'VulnerabilityRelatedGenesFDRSpearman.pdf')
+# init <- paste0(opdir,'genes_vulnerability/',injection.site.label,'/',grp,'OteroGarciaGenesFDRSpearman.pdf')
+# file.copy(from=init,to=paste0(fig.dir.j,'c.pdf'))
+# init <- paste0(opdir,'genes_vulnerability/',injection.site.label,'/',grp,'OteroGarciaGenes.csv')
+# file.copy(from=init,to=paste0(fig.dir.j,'c.csv'))
+init <- paste0(opdir,'genes_vulnerability/',injection.site.label,'/',grp,'VulnerabilityRelatedGenesFDRpearson.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'d.pdf'))
 
 # Figure 6 in silico injections
@@ -156,22 +160,37 @@ grp <- 'NTG'
 desc <- c('script, a: code/diffmodel/vuln_hemi_time.R',
           'script, b-e: code/genes_vulnerability/genes_vulnerability_bidirectional.R',
           grp,'(a) Spatial similarity of model residuals between each hemisphere-time point combo.',
-          '(b) List of genes whose spatial expression patterns are correlated with NTG vulnerability',
-          '(c) Spatial similarity of expression patterns between vulnerability-related genes (FDR corrected p<0.05 cut off for inclusion)',
           '(d) List of genes whose spatial expression patterns are correlated with NTG-G20 pathology',
           '(e) Spatial similarity of expression patterns between NTG-G20 pathology-related genes (FDR corrected p<0.05 cut off for inclusion)',
           '(e) there are ~1200 of these genes so I removed the axis labels but there are two clear clusters')
 write.table(x=desc,file = paste0(fig.dir.j,'.txt'),sep = '\n',row.names = F,col.names = F)
 init <- paste0(opdir,'diffmodel/vuln_time_hemi/',injection.site.label,'/',grp,'VulnerabilityByTimeAndHemisphere.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'a.pdf'))
-init <- paste0(opdir,'genes_vulnerability/',injection.site.label,'/',grp,'Top100GenesVulnerability.csv')
-file.copy(from=init,to=paste0(fig.dir.j,'bVulnGenes.csv'))
-init <- paste0(opdir,'genes_vulnerability/',injection.site.label,'/',grp,'SimilarityOfVulnerabilityRelatedGenes.pdf')
-file.copy(from=init,to=paste0(fig.dir.j,'c.pdf'))
-init <- paste0(opdir,'genes_vulnerability/',injection.site.label,'/Top100GenesNTGMinusG20Path.csv')
+init <- paste0(opdir,'genes_vulnerability/',injection.site.label,'/Top100GenesNTGMinusG20PathPearson.csv')
 file.copy(from=init,to=paste0(fig.dir.j,'dNTGG20Genes.csv'))
-init <- paste0(opdir,'genes_vulnerability/',injection.site.label,'/SimilarityOfNTGMinusG20PathRelatedGenes.png')
+init <- paste0(opdir,'genes_vulnerability/',injection.site.label,'/SimilarityOfNTGMinusG20PathRelatedGenespearson.png')
 file.copy(from=init,to=paste0(fig.dir.j,'e.png'))
+
+# Figure S7: consistency of vulnerability across hemispheres and time, genes
+
+fig.dir.j <- paste0(fig.dir,'FigureSX','/') # make figure directory
+dir.create(fig.dir.j,recursive = T)
+fig.dir.j <- paste0(fig.dir.j,'FigureSX') # prefix for figure direction/Figure
+grp <- 'NTG'
+desc <- c('script, a: code/nullmodels/analyzespread_Euclidean_CNDRspace.R and code/nullmodels/plotCNDRspaceEuclideanfit.R',
+          'script, b-e: code/modelcomparison/modelcomparison_traintest_exclinj.R and code/modelcomparison/plot_modelcomparison_testset_exclinj.R',
+          grp,'(a) Predicted vs. actual for optimized diffusion model where the network is the matrix of inverse euclidean distances between the center of mass of each ABA region, excluding injection sites.',
+          '(b) Distributions of model fit in test set using euclidean model, euclidean model excluding injection sites, and bidirectional model.')
+write.table(x=desc,file = paste0(fig.dir.j,'.txt'),sep = '\n',row.names = F,col.names = F)
+init <- paste0(opdir,'nullmodels/euclidean/',injection.site.label,'/',grp,'CNDRSpaceFit_Euclidean_ExcludeInjectionSites.pdf')
+file.copy(from=init,to=paste0(fig.dir.j,'a.pdf'))
+init <- paste0(opdir,'modelcomparison/traintest/',injection.site.label,'/euclidean_exclinj/',grp,'EuclideanExclInjVsAllPoints_TestSetPearsonR_CNDRSpace.pdf')
+file.copy(from=init,to=paste0(fig.dir.j,'b.pdf'))
+init <- paste0(opdir,'modelcomparison/traintest/',injection.site.label,'/euclidean_exclinj/',grp,'EuclideanExclInjVsAllPoints_PValMatrix_TestSetPearsonR_CNDRSpace.pdf')
+file.copy(from=init,to=paste0(fig.dir.j,'b_diffmatrix.pdf'))
+init <- paste0(opdir,'modelcomparison/traintest/',injection.site.label,'/euclidean_exclinj/',grp,'PValsEuclideanExclInjTestSet.csv')
+file.copy(from=init,to=paste0(fig.dir.j,'bStats.csv'))
+
 #########
 
 

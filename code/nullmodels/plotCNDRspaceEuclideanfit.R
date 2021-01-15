@@ -56,12 +56,12 @@ injection.site.CNDR <- unname(params$injection.site.CNDR[injection.site]) # conv
 df.excl <- lapply(df, function(X) X[path.names[!path.names %in% injection.site.CNDR],])
 
 p <- lapply(1:length(tps), function(t) 
-  p.xy(x=df.excl[[t]]$pred,y=df.excl[[t]]$path,ylab='Actual',xlab='Predicted',
+  p.xy(x=df.excl[[t]]$pred,y=df.excl[[t]]$path,ylab='Log(Pathology)',xlab='Log(Predicted)',
        ttl=paste0(grp,': ',tps[t],' MPI'),col=col,alpha=0.7))
 p <- plot_grid(plotlist=p,align='hv',nrow=1)
 
 ggsave(p,filename = paste(savedir,grp,'CNDRSpaceFit_Euclidean_ExcludeInjectionSites.pdf',sep=''),
-       units = 'cm',height = 3.75,width = 3.75*length(tps),useDingbats=FALSE)
+       units = 'cm',height = 4.35,width = 4.35*length(tps),useDingbats=FALSE)
 
 ###############################################
 ### Save predicted values and vulnerability ###

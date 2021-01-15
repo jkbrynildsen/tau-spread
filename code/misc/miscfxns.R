@@ -27,6 +27,21 @@ fda <- function(x1,x2,nperms = 1000){
 
 }
 
+get.inf.nan.mask <- function(x){
+	# INPUTS:
+	# x: matrix, df, or vector
+	# 
+	# OUTPUTS:
+	# mask: mask for x with all rows (if matrix or df) or elements (if vector) containing Infs or NaNs set to FALSE
+
+	if(is.vector(x)){
+		mask <- x %in% c(-Inf,Inf,NaN,NA)# find infs or nans
+	} else if(is.matrix(x) | is.data.frame(x)){
+		mask <- do.call('cbind',lapply(1:ncol(x),function(j) x[,j] %in% c(-Inf,Inf,NaN,NA))) # find infs or nans
+	}
+	return(mask)
+}
+
 inf.nan.mask <- function(x){
 	# INPUTS:
 	# x: matrix, df, or vector
