@@ -97,8 +97,8 @@ c.CNDRspace.objective <- function(params.opt,log.path,tps,L.out.retro,L.out.ante
   }
 
   ptm <- proc.time()
-  Xt.retro <- do.call('cbind',lapply(tps,function(t.) predict.Lout(L.out.retro,Xo,c.retro,t.,fxn=scipy.linalg$expm))) # predict path using linear diff model into matrix that is region-by-time
-  Xt.antero <- do.call('cbind',lapply(tps,function(t.) predict.Lout(L.out.antero,Xo,c.antero,t.,fxn=scipy.linalg$expm))) # predict path using linear diff model into matrix that is region-by-time
+  Xt.retro <- do.call('cbind',lapply(tps,function(t.) predict.Lout(L.out.retro,Xo,c.retro,t.,fxn=fxn))) # predict path using linear diff model into matrix that is region-by-time
+  Xt.antero <- do.call('cbind',lapply(tps,function(t.) predict.Lout(L.out.antero,Xo,c.antero,t.,fxn=fxn))) # predict path using linear diff model into matrix that is region-by-time
   print(paste0('predict: ',(proc.time()-ptm)['elapsed'],'s'))
   print(paste0('optim,',c.retro,',',c.antero)) # output tested parameters to see what optim is doing
   #ptm <- proc.time()
