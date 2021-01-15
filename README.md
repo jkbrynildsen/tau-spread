@@ -9,7 +9,7 @@ Code to reproduce all analysis in Henderson et al. 2021 ("Tau pathology spreads 
 
 ## Tutorial
 
-For a general overview, see `example` folder.
+For a general overview of linear diffusion modeling in neurodegenerative disease, see tutorial in `example` folder.
 
 ## Directory structure
 
