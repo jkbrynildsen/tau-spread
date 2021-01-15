@@ -57,29 +57,15 @@ probe <- 'RP_071204_01_D02'
 source('code/diffmodel/plotCNDRspacefit.R')
 
 #injection.sites <- c(as.list(params$injection.site),list(params$injection.site),list(c('iDG','iCA1','iCA3'))) # use each seed site separately, all together, and then do entire hippocampus
-injection.sites <- c(list(params$injection.site))
-# bidirectional, independent, additive diffusion model: anterograde and retrograde additive and independent
-for(injection.site in injection.sites){
-  print(injection.site)
-  for(grp in params$grps){
-    #source('code/diffmodel/analyzebidirectionalspread_CNDRspace.R') # fit time constants independently to get initial parameters
-    source('code/diffmodel/optim_bidirectionalspread_CNDRspace.R')
-    goi <- 'Mapt'
-    probe <- 'RP_071204_01_D02'
-    source('code/diffmodel/plotCNDRspacebidirectionalfit.R')
-  }
-}
-
 # bidirectional diffusion model with different a single linear model weighting anterograde and retrograde
 # Manuscript: Figure 4A (NTG) model fit by month, 5B (NTG) residuals vs. MAPT exp
 for(grp in params$grps){
-  injection.sites <- c(list(params$injection.site))
-  for(injection.site in injection.sites){
-    source('code/diffmodel/optim_bidirectionalspread_onelm_CNDRspace.R')
-    goi <- 'Mapt'
-    source('code/diffmodel/plotCNDRspacebidirectionalonelmfit.R')
-  }
+  injection.site <- params$injection.site
+  source('code/diffmodel/optim_bidirectionalspread_onelm_CNDRspace.R')
+  goi <- 'Mapt'
+  source('code/diffmodel/plotCNDRspacebidirectionalonelmfit.R')
 }
+
 ################################
 ### Quality control analyses ###
 ################################
@@ -88,24 +74,18 @@ for(grp in params$grps){
 
 for(grp in params$grps){
   # seed specificity
-  #source('code/diffmodel/seedspec.R')
-  #source('code/diffmodel/plotseedspec.R')
-  
-  # validate time constant out of sample
-  #source('code/diffmodel/traintest_bidirectional_CNDRspace.R')
-  source('code/diffmodel/plot_traintest_bidirectional.R')
+  source('code/diffmodel/seedspec.R')
+  source('code/diffmodel/plotseedspec.R')
 }
 
-# bootstrap time constants and fits
-injection.sites <- list(params$injection.site)
-for(injection.site in injection.sites){
-  for(grp in params$grps){
-    source('code/modelcomparison/bootstrap_optimspread_bidirectional.R')
-  }
-  grp <-'NTG'
-  #source('code/modelcomparison/modelcomparison_traintest.R')
-}
+# compare out of sample fits between models-- anterograde, retrograde, euclidean, bidirectional
+injection.site <- params$injection.site; grp <-'NTG'
+source('code/modelcomparison/modelcomparison_traintest.R')
 source('code/modelcomparison/plot_modelcomparison_testset.R')
+
+# evaluate euclidean distance model after excluding injection sites
+source('code/modelcomparison/modelcomparison_traintest_exclinj.R')
+source('code/modelcomparison/plot_euclidean_exclinj_testset.R')
 
 ###############################
 ### Genes and vulnerability ###
@@ -122,13 +102,11 @@ source('code/genes_vulnerability/genes_vulnerability_bidirectional.R')
 #injection.sites <- c(as.list(params$injection.site),list(params$injection.site),list(c('iDG','iCA1','iCA3')))
 injection.sites <- c(list(params$injection.site))
 # retrograde model with additive Mapt expression
-for(injection.site in injection.sites){
-  for(grp in params$grps){
-    source('code/nullmodels/analyzespread_Euclidean_CNDRspace.R')
-    goi <- 'Mapt'
-    probe <- 'RP_071204_01_D02'
-    source('code/nullmodels/plotCNDRspaceEuclideanfit.R')
-  }
+for(grp in params$grps){
+  source('code/nullmodels/analyzespread_Euclidean_CNDRspace.R')
+  goi <- 'Mapt'
+  probe <- 'RP_071204_01_D02'
+  source('code/nullmodels/plotCNDRspaceEuclideanfit.R')
 }
 
 # run matlab scripts to generate distance matrix and rewired connectivity matrix
@@ -141,6 +119,7 @@ grp <- 'NTG'
 injection.site <- params$injection.site
 source('code/nullmodels/optimspread_rewire_onelm_CNDRspace.R')
 source('code/nullmodels/plotCNDRspace_rewirefit_onelm.R')
+
 ############################
 ### G20 vs. NTG analyses ###
 ############################
@@ -150,6 +129,12 @@ injection.sites <- c(as.list(params$injection.site),list(params$injection.site),
 for(injection.site in injection.sites){
   source('code/G20vsNTG/NTGvuln_vs_groupdiff.R')
 }
+
+# bootstrap models for NTG and G20 to compare parameters
+for(grp in params$grps){
+  source('code/modelcomparison/bootstrap_optimspread_bidirectional.R')
+}
+source('code/modelcomparison/G20vsNTG_bootstrap_onelm.R')
 
 #####################
 ### miscellaneous ###
