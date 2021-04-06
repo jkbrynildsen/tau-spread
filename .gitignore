@@ -9,6 +9,10 @@
 .Ruserdata
 *.DS_Store*
 
+# dev code
+code/thesis
+code/troubleshoot_norm
+
 # results files
 *TauDiffusion*Cmax*
 figures*
