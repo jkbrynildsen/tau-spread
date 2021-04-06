@@ -48,7 +48,11 @@ spread.model.train <- function(X.train,mdl.name,ctrl){
   if(!grepl('Bidirectional',mdl.name)){
     m.out <- spread.model.unidirectional.train(X.train,mdl.name,ctrl)
   } else{
-    m.out <- spread.model.bidirectional.train(X.train,mdl.name,ctrl)
+    if(grepl('Euclidean',mdl.name)){        
+        m.out <- spread.model.bidirectional.euclidean.train(X.train,mdl.name,ctrl) # bidirectional connectivity + euclidean distance model
+      } else{
+        m.out <- spread.model.bidirectional.train(X.train,mdl.name,ctrl) # bidirectional connectivity model
+      }    
   }
   return(m.out)
 }
@@ -114,6 +118,49 @@ spread.model.bidirectional.train <- function(X.train,mdl.name,ctrl){
   
 }
 
+spread.model.bidirectional.euclidean.train <- function(X.train,mdl.name,ctrl){
+  # INPUTS:
+  # see spread.model.train() for details
+  #
+  # OUTPUTS:
+  # m.out: list with time constant, predicted values, time points, linear models, and model name
+  ABA.to.CNDR.key <- ctrl$ABA.to.CNDR.key
+  path.names <- names(ABA.to.CNDR.key)
+  Xo <- ctrl$Xo
+  L.out.retro <- ctrl$Retrograde
+  L.out.antero <- ctrl$Anterograde
+  L.euclidean <- ctrl$Euclidean
+  params.opt.fit <- optim(ctrl$c.r.a.init,c.CNDRspace.euc.objective,control = ctrl$ctrl.optim, method="L-BFGS-B",lower=c(1e-7,1e-7), # optimization. c's must be > 0
+                          log.path=X.train,tps=ctrl$tps,L.out.retro=ctrl$Retrograde,L.out.antero=ctrl$Anterograde,L.euclidean=ctrl$Euclidean,
+                          Xo=ctrl$Xo,ABA.to.CNDR.key=ctrl$ABA.to.CNDR.key,fxn =ctrl$fxn,one.lm = ctrl$one.lm,excl.inj.CNDR=ctrl$excl.inj) # static inputs
+  # extract parameters from optimization output
+  c.train.retro <- params.opt.fit$par[1]
+  c.train.antero <- params.opt.fit$par[2]
+  c.train.euclidean <- params.opt.fit$par[3]
+
+  # get predicted values - apply log base 10 for fitting linear models
+  Xt.Grp.retro <- do.call('cbind',lapply(tps, function(t) log(quiet(map.ABA.to.CNDR(predict.Lout(L.out.retro,Xo,c.train.retro,t,fxn=ctrl$fxn),path.names,ABA.to.CNDR.key)),base=10))) # predict pathology using connectivity, time constant, and seed
+  Xt.Grp.antero <- do.call('cbind',lapply(tps, function(t) log(quiet(map.ABA.to.CNDR(predict.Lout(L.out.antero,Xo,c.train.antero,t,fxn=ctrl$fxn),path.names,ABA.to.CNDR.key)),base=10))) # predict pathology using connectivity, time constant, and seed
+  Xt.Grp.euclidean <- do.call('cbind',lapply(tps, function(t) log(quiet(map.ABA.to.CNDR(predict.Lout(L.euclidean,Xo,c.train.euclidean,t,fxn=ctrl$fxn),path.names,ABA.to.CNDR.key)),base=10))) # predict pathology using connectivity, time constant, and seed
+  # exclude injection sites if specified in params
+  Xt.Grp.retro[rownames(Xt.Grp.retro) %in% ctrl$excl.inj,] <- -Inf
+  Xt.Grp.antero[rownames(Xt.Grp.antero) %in% ctrl$excl.inj,] <- -Inf
+  Xt.Grp.euclidean[rownames(Xt.Grp.euclidean) %in% ctrl$excl.inj,] <- -Inf
+  # fit linear models
+  if(ctrl$one.lm){
+    list[m,e,m.fits,df] <- lm.mask.ant.ret.euc.all(X.train,10^Xt.Grp.retro,10^Xt.Grp.antero,10^Xt.Grp.euclidean) # undo log10 because this function has log10 built in
+  } else{
+    print('ERROR: must use onelm option with this model')
+  }
+  
+  # save output
+  m.out <- list(c.train.retro=c.train.retro,c.train.antero=c.train.antero,c.train.euclidean=c.train.euclidean,
+          Xt.Grp.antero=Xt.Grp.antero,Xt.Grp.retro=Xt.Grp.retro,Xt.Grp.euclidean=Xt.Grp.euclidean,
+                tps=ctrl$tps,m.train=m,mdl.name=mdl.name)
+  return(m.out)
+  
+}
+
 spread.model.eval <- function(m.out,X.test,save.resid=FALSE){
   # INPUTS:
   # m.out: output from spread.model.unidirectional.train or spread.model.bidirectional.train, contains trained models
@@ -127,10 +174,12 @@ spread.model.eval <- function(m.out,X.test,save.resid=FALSE){
   tps <- m.out$tps # get time points in vector
   Xt.Grp.retro <- m.out$Xt.Grp.retro
   Xt.Grp.antero <- m.out$Xt.Grp.antero
+  Xt.Grp.euclidean <- m.out$Xt.Grp.euclidean
   Xt.Grp <- m.out$Xt.Grp
   c.train.retro <- m.out$c.train.retro
   c.train.antero <- m.out$c.train.antero
   c.train <- m.out$c.train
+  mdl.name <- m.out$mdl.name
   results <- list()
   if(mdl.name == 'Bidirectional'){
     df.test <- lapply(1:length(tps), function(t) data.frame(path = X.test[[t]], pred.retro = Xt.Grp.retro[,t,drop=FALSE], pred.antero = Xt.Grp.antero[,t,drop=FALSE]))
@@ -144,7 +193,16 @@ spread.model.eval <- function(m.out,X.test,save.resid=FALSE){
     results$c.train.retro <- c.train.retro
     results$c.train.antero <- c.train.antero
     results$m.train.coefs <- summary(lm.beta(m.train))$coef # store standardized coefficients
-  } else{
+  } else if(mdl.name == 'BidirectionalOneLMEuclidean'){
+    df.test <- lapply(1:length(tps), function(t) data.frame(path = X.test[[t]], x1 = Xt.Grp.retro[,t,drop=FALSE], x2 =Xt.Grp.antero[,t,drop=FALSE],x3 =Xt.Grp.euclidean[,t,drop=FALSE]))
+    df.test <- lapply(1:length(tps), function(t.) inf.nan.mask(cbind(df.test[[t.]],pred=predict(m.train,df.test[[t.]]))) ) # add predicted values from linear models
+    results$c.train.retro <- c.train.retro
+    results$c.train.antero <- c.train.antero
+    results$c.train.euclidean <- m.out$c.train.euclidean
+    results$m.train.coefs <- summary(lm.beta(m.train))$coef # store standardized coefficients    
+  }
+
+  else{
     # for all unidirectional models
     df.test <- lapply(1:length(tps), function(t) data.frame(path = X.test[[t]], pred = Xt.Grp[,t,drop=FALSE])) # use prediction from network diffusion mode (e^-(Lct)%*%Xo)
     # now apply time-point specific linear models to get MSE

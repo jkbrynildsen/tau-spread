@@ -56,6 +56,7 @@ df.plt <- collapse.columns(df.all,cnames=c('Anterograde','Retrograde'),groupby =
 for(grp in params$grps){
   subset.list <- lapply(c(Anterograde='Anterograde',Retrograde='Retrograde'), function(n) df.plt$values[df.plt$names == n & df.plt$group==grp])
   subset.stats <- lapply(subset.list, function(X) c(mean=mean(X),quantile(X,c(0.025,.975)),median=median(X),cv=sd(X)/mean(X)))
+  subset.stats$AnterogradeVsRetrogradeTimeConstant <- pval.np.pub(pval.2tail.np(0,subset.list$Retrograde-subset.list$Anterograde),length(subset.list$Retrograde))
   sink(paste0(savedir,grp,"TimeConstantStats.txt"))
   print(subset.stats)
   sink()
@@ -65,7 +66,7 @@ p.lab <- paste0('p = ',signif(p.lab,2))
 df.plt$group <- factor(df.plt$group,levels = c(params$grps),ordered=T)
 p.c <- ggplot(df.plt) + geom_boxplot(aes(x=names,y=values,fill=group),size=0.25,outlier.size = 0.25) + theme_classic() +
   annotate(geom='text',x=c('Anterograde','Retrograde'),y=Inf,label=p.lab,vjust=1,size=2)+
-  ylab('Diffusivity Constant') + xlab('') + scale_y_continuous(limits=c(0,NA))+scale_fill_manual(limits=params$grps,values =group.colors,name='')+
+  ylab('Diffusion Rate Constant') + xlab('') + scale_y_continuous(limits=c(0,NA))+scale_fill_manual(limits=params$grps,values =group.colors,name='')+
   theme(text=element_text(size=8),legend.key.size = unit(0.1,'cm'),legend.box.margin = ggplot2::margin(t = 0, unit='cm'),axis.text.x = element_text(angle=90,hjust=1,vjust=0.5)) 
 p.c
 ggsave(p.c,filename = paste(savedir,'NTGvsG20TimeConstants_CNDRSpace.pdf',sep=''),
@@ -110,6 +111,32 @@ p <- ggplot() + geom_boxplot(data=df.plt,aes(x=group,y=values,fill=Group),size=0
 ggsave(p,filename = paste(savedir,'NTGvsG20AnterogradeRetrogradeBetas_Boxplot_CNDRSpace.pdf',sep=''),
        units = 'cm',height = 6,width = 9,useDingbats=FALSE)
 write.csv(x=p.G20.v.NTG.lab,file=paste0(savedir,'NTGvsG20_AnteroAndRetroBetas_Stats.csv'),row.names = F)
+
+# save the mean and 95% CI of betas and time constants within each group
+NTG.c <- as.data.frame(t(sapply(results.NTG,function(R) c(Anterograde=R$c.train.antero,Retrograde=R$c.train.retro))))
+G20.c <- as.data.frame(t(sapply(results.G20,function(R) c(Anterograde=R$c.train.antero,Retrograde=R$c.train.retro))))
+df.tc <- rbind(cbind(NTG.c,Group='NTG',stringsAsFactors=F),cbind(G20.c,Group='G20',stringsAsFactors=F))
+df.tc <- collapse.columns(df.all,cnames=c('Anterograde','Retrograde'),groupby = 'Group')
+
+beta.tc.stats <- data.frame()
+
+for(a.r in c('Anterograde','Retrograde')){
+  for(grp in params$grps){
+    mask.beta <- df.plt$group==a.r &df.plt$Group==grp
+    beta.tc.stats[paste(grp,a.r,'Beta'),'2.5%'] <- quantile(df.plt$values[mask.beta],0.025)
+    beta.tc.stats[paste(grp,a.r,'Beta'),'Median'] <- median(df.plt$values[mask.beta])
+    beta.tc.stats[paste(grp,a.r,'Beta'),'97.5%'] <- quantile(df.plt$values[mask.beta],0.975)
+  }
+}
+for(a.r in c('Anterograde','Retrograde')){
+  for(grp in params$grps){
+    mask.tc <- df.tc$names == a.r & df.tc$group==grp
+    beta.tc.stats[paste(grp,a.r,'Diffusion Time Constant'),'2.5%'] <- quantile(df.tc$values[mask.tc],0.025)
+    beta.tc.stats[paste(grp,a.r,'Diffusion Time Constant'),'Median'] <- median(df.tc$values[mask.tc])
+    beta.tc.stats[paste(grp,a.r,'Diffusion Time Constant'),'97.5%'] <- quantile(df.tc$values[mask.tc],0.975)
+  }
+}
+write.csv(x=signif(beta.tc.stats,3),file=paste0(savedir,'NTGvsG20BetaTimeConstantDistributionTable.csv'))
 
 # 4. bootstrap NTG vulnerability values -- not done
 

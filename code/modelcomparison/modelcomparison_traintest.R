@@ -43,7 +43,7 @@ scipy.linalg <- reticulate::import('scipy.linalg') # import scipy matrix exponen
   # c.retro, c.antero: use values from bidirectional fit to initialize
 load(file=paste0(params$opdir,'diffmodel/bidirectional/',paste0(injection.site,collapse='-'),'_independentfit/',grp,'CNDRSpaceIndependentBidirectionalFit_params.RData'))
 ctrl.optim <- list(fnscale=-1) # set controls for optim function -- maximize the objective function instead of minimizing (default)
-ctrl <- list(Retrograde=L.out.retro,Anterograde=L.out.antero,Euclidean=L.out.D,
+ctrl.base <- list(Retrograde=L.out.retro,Anterograde=L.out.antero,Euclidean=L.out.D,
              Xo=Xo,fxn=scipy.linalg$expm,ABA.to.CNDR.key=ABA.to.CNDR.key,tps=tps,
              c.r.a.init=c(c.Grp.retro,c.Grp.antero),
              ctrl.optim=ctrl.optim,
@@ -51,24 +51,27 @@ ctrl <- list(Retrograde=L.out.retro,Anterograde=L.out.antero,Euclidean=L.out.D,
              one.lm=FALSE)
 
 # Loop through model types, train on train sets, evaluate on train and test sets
-mdl.names <- c('Euclidean','Retrograde','Anterograde','Bidirectional','BidirectionalOneLM')
+mdl.names <- c('Euclidean','Retrograde','Anterograde','Bidirectional','BidirectionalOneLM','BidirectionalOneLMEuclidean')
 results <- list()
+load(file = paste(savedir,grp,'CNDRSpaceModelComparison_TrainTest.RData',sep=''))
+mdl.names <- c('BidirectionalOneLMEuclidean')
 for(mdl.name in mdl.names){
+  ctrl <- ctrl.base
   print(paste('training and testing',mdl.name))
   
-  if(mdl.name == 'Euclidean'){
+  if(grepl('Euclidean',mdl.name)){
     ctrl$Xo <- get.Xo(region.names.mdl,injection.site) # exclude regions with missing coordinate data
     ctrl$excl.inj <- injection.site.CNDR # exclude injection sites which end up being major outliers in this model
     ctrl$c.rng <- ctrl$c.rng + 0.1 # shift c.rng to capture different range of optimal time constants in Euclidean distance model
-    } 
-  else { # restore default parameters for other models
-    ctrl$Xo <- get.Xo(region.names,injection.site)
-    ctrl$excl.inj <- NULL
-    ctrl$c.rng <- seq(params$c.min,params$c.max,length.out = params$c.n)
+    if(grepl('Bidirectional',mdl.name)){ # bidirectional euclidean distance model; delete regions with missing coordinates
+      ctrl$Retrograde <- get.Lout(W[-missing.regions,-missing.regions],rep(1,length(region.names.mdl)),ant.ret = 'retro')
+      ctrl$Anterograde <- get.Lout(W[-missing.regions,-missing.regions],rep(1,length(region.names.mdl)),ant.ret = 'antero')
+      ctrl$c.r.a.init <- c(ctrl$c.r.a.init,0.2) # initialize euclidean distance time constant at 0.2
+    }
   }
   
   results[[mdl.name]] <- list(train=NULL,test=NULL)
-  for(REP in 1:nreps){
+  for(REP in 1:nreps){ 
     print(paste('REP',REP))
     X.train <- log.path.train[[REP]]
     X.test <- log.path.test[[REP]]

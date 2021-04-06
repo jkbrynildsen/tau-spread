@@ -148,7 +148,7 @@ init <- paste0(opdir,'nullmodels/rewire_onelm/',injection.site.label,'/',grp,'CN
 file.copy(from=init,to=paste0(fig.dir.j,'b.pdf'))
 init <- paste0(opdir,'nullmodels/rewire_onelm/',injection.site.label,'/',grp,'CNDRSpaceFit_OutDegreePreserved_OneLM.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'c.pdf'))
-init <- paste0(opdir,'nullmodels/seedspec_multi/',injection.site.label,'/',grp,'RandomSeedFitsVsConnectivity.pdf')
+init <- paste0(opdir,'nullmodels/seedspec_multi/',injection.site.label,'/',grp,'RandomSeedFitsVsConnectivity_OneLM.pdf')
 file.copy(from=init,to=paste0(fig.dir.j,'d.pdf'))
 
 # Figure S7: consistency of vulnerability across hemispheres and time, genes

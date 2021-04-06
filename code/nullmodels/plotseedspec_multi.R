@@ -62,7 +62,7 @@ inj.dist <- sapply(alt.seed.sites, function(sites) mean(D.mat[injection.site,sit
 
 tps <- params$tps
 # fit gams at each time point to compare relationship between null site performance
-am <- lapply(1:length(tps), function(t.) gam(null.cors[,t.] ~ s(inproj.sim,k=3) + s(outproj.sim,k=3) +alt.seed.distances + s(inj.dist,k=3),method = 'REML'))
+am <- lapply(1:length(tps), function(t.) gam(null.cors[,t.] ~ s(inproj.sim,k=3) + s(outproj.sim,k=3) + s(inj.dist,k=3),method = 'REML'))
 p.list <- lapply(am,function(am.i) p.xy(x=am.i$fitted.values,y=am.i$y,xlab = 'Connectivity Similarity',ylab='Fit to Random Sites',col=wes_palettes$Zissou1[3],alpha=0.5,sm.method = 'gam',formula =y~s(x,k=3)))
 p <- plot_grid(plotlist=p.list,align='hv',nrow=1)
 ggsave(p,filename=paste(savedir,grp,'RandomSeedFitsVsConnectivity_OneLM.pdf',sep=''),

@@ -161,10 +161,6 @@ imagesc <- function(X,caxis_name='',cmap='plasma',caxis_labels=NULL,clim=c(min(X
     p <- p + scale_fill_gradientn(colours = c('#8B0000','#c23b22','#ffffff','#779ecb','#00008b'),
                            guide = "colorbar", limits=clim,breaks=caxis_breaks,
                            na.value = 'grey',name=caxis_name)
-  } else if(cmap == 'bluered'){
-    p <- p + scale_fill_gradientn(colours = c('#00008b','#779ecb','#ffffff','#c23b22','#8B0000'),
-                           guide = "colorbar", limits=clim,breaks=caxis_breaks,
-                           na.value = 'grey',name=caxis_name)
   } else if(cmap == 'redblue_asymmetric'){
     p <- p + scale_fill_gradientn(colours = c('#8B0000','#c23b22','#ffffff','#779ecb','#00008b'),
                            values = scales::rescale(c(clim[1],0,clim[2])),
