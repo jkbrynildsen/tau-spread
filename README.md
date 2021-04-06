@@ -14,12 +14,12 @@ For a general overview of linear diffusion modeling in neurodegenerative disease
 ## Directory structure
 
 Master branch contains 2 major folders:
-  - `code` contains folders with scripts organized by analysis, i.e. ‘code/diffmodel’ contains code that uses linear diffusion models to predict spread of protein through structural connectome, 'code/G20vsNTG' deals with comparisons between G20 mice and NTG mice.
+  - `code` contains folders with scripts organized by analysis, i.e. `code/diffmodel` contains code that uses linear diffusion models to predict spread of protein through structural connectome, `code/G20vsNTG` deals with comparisons between G20 mice and NTG mice.
   - `data` contains input pathology data, look-up table to convert ABA and CNDR spaces
 
 ## Input specification
 
-The file ‘pipeline.R’ is located in the main directory. This file will coordinate the sequential execution of all scripts within the code/ folder, generating all the figures in the paper and more. Custom specification of the following inputs at the top of ‘pipeline.R’ is required:
+The file `pipeline.R` is located in the main directory. This file will coordinate the sequential execution of all scripts within the code/ folder, generating all the figures in the paper and more. Custom specification of the following inputs at the top of `pipeline.R` is required:
   - `basedir`:  path to the main directory containing the `code` and `data` folders 
   - `matlab.path`: path to MATLAB binary. only needed for one supplemental analysis.
   - `injection.site`: vector of character names of brain regions in ABA to inject pathology into
