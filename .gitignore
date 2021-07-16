@@ -18,12 +18,15 @@ code/troubleshoot_norm
 figures*
 
 # generated data files
-*.csv
+data/*.csv
+data/aba/expression/*NormalizedFirst.csv
 data/aba/atlas/atlasVolume*
 data/aba/atlas/P56*
 data/aba/atlas/*.mat
 data/aba/atlas/*.RData
 data/aba/atlas/*.nrrd
+data/aba/atlas/structIDs.csv
+
 # Example code in package build process
 *-Ex.R
 
