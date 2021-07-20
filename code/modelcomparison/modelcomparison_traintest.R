@@ -53,8 +53,7 @@ ctrl.base <- list(Retrograde=L.out.retro,Anterograde=L.out.antero,Euclidean=L.ou
 # Loop through model types, train on train sets, evaluate on train and test sets
 mdl.names <- c('Euclidean','Retrograde','Anterograde','Bidirectional','BidirectionalOneLM','BidirectionalOneLMEuclidean')
 results <- list()
-load(file = paste(savedir,grp,'CNDRSpaceModelComparison_TrainTest.RData',sep=''))
-mdl.names <- c('BidirectionalOneLMEuclidean')
+
 for(mdl.name in mdl.names){
   ctrl <- ctrl.base
   print(paste('training and testing',mdl.name))
